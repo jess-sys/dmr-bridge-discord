@@ -11,6 +11,8 @@ This script is inspired by https://github.com/jess-sys/DMRBridgeWAV/blob/master/
 
 The target server is AnalogBridge (see https://github.com/DVSwitch/Analog_Bridge).
 
+![Diagram](https://i.ibb.co/0Y2zQVg/dmrbridgewav.png)
+
 ### Install
 
 ```bash
