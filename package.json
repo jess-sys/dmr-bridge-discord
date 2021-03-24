@@ -1,0 +1,9 @@
+{
+  "name": "DMRBridgeDiscord",
+  "version": "1.0.0",
+  "description": "Bridge a DMR network with a Discord voice channel.",
+  "main": "index.js",
+  "repository": "https://github.com/jess-sys/DMRBridgeDiscord",
+  "author": "Jessy SOBREIRO <jessy.sobreiro@epitech.eu>",
+  "license": "GPLv3"
+}
