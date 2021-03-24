@@ -28,9 +28,18 @@ First edit the `.env` file to reflect your infrastructure :
 * `BOT_TOKEN` : see [this link](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token) to know how to get a token
 * `DMR_SERVER` : your Analog Bridge IP
 
+#### Manually
+
+You can start DMRBridgeDiscord :
 ```bash
 $ yarn start
+```
 
+#### Inside a container
+
+You can use the docker-compose configuration file: 
+```bash
+$ docker-compose up
 ```
 
 # Todo
