@@ -1,0 +1,12 @@
+version: '3.9'
+
+services:
+  DMRBridgeDiscord:
+    build: .
+    restart: always
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - BOT_PREFIX=${BOT_PREFIX}
+      - DMR_SERVER=${DMR_SERVER}
+      - DMR_TARGET_RX_PORT=${DMR_TARGET_RX_PORT}
+      - DMR_TARGET_TX_PORT=${DMR_TARGET_TX_PORT}
