@@ -65,11 +65,8 @@ function create_rx_socket(connection) {
             if (type == 0) {
                 const opusBuffer = encoder.encode(audio, 160);
                 q.push(opusBuffer)
-                if (last_key !== 0 && keyup == 0) {
-                    //logger.info('RX', 'STOP RECEIVING');
-                } else {
-                    //logger.info('RX', 'RECEIVING');
-                    //last_key += 1
+                if (keyup == 0) {
+                    logger.info('RX', 'PTT', 'Pressed');
                 }
             }
         } else {
