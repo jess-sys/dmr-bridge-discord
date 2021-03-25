@@ -1,5 +1,3 @@
-import { WritableStream } from 'stream';
-
 const stream = require('stream');
 const dgram = require('dgram');
 const binary = require('binary')
