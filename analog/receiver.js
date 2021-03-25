@@ -6,7 +6,16 @@ const logger = require('../helpers/logger');
 
 function create_rx_socket(connection) {
     const encoder = new OpusScript(8000, 1, OpusScript.Application.VOIP);
-    const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 5120 });
+    const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 320 });
+    let queueBuffer = [];
+    let garbageListener = garbageListener = setTimeout(() => {
+        const buffer = Buffer.concat(queueBuffer);
+        const opusBuffer = encoder.encode(buffer, buffer.length / 2);
+        const opusStream = stream.Readable.from(opusBuffer);
+        connection.play(opusStream, { type: "opus" });
+    }, 150);
+
+    clearTimeout(garbageListener);
 
     socket.bind(process.env.DMR_TARGET_TX_PORT);
     
@@ -22,9 +31,8 @@ function create_rx_socket(connection) {
 
     socket.on("message", (msg, rinfo) => {
         logger.success('RX', 'AUDIO', 'Got new audio frame of size ' + rinfo.size)
-        connection.play(stream.Readable.from(encoder.encode(msg, rinfo.size / 2)), {
-            type: 'opus'
-        });
+        queueBuffer.push(msg);
+        garbageListener.refresh();
     });
 
     socket.on("listening", () => {
