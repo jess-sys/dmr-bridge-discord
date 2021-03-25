@@ -17,8 +17,8 @@ module.exports = class ConnectCommand extends Command {
             if (message.member.voice.channel.id === message.guild.me.voice.channel?.id)
                 return;
             const connection = await message.member.voice.channel.join();
-            const discord_transmitter = connection.player;
-            const discord_receiver = connection.receiver;
+            const discord_receiver = connection.player;
+            const discord_transmitter = connection.receiver;
             transceiver.rx.create_rx_socket(discord_receiver);
             //transceiver.tx.transmit();
         } else {

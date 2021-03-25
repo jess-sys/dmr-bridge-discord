@@ -2,7 +2,7 @@ const stream = require('stream');
 const dgram = require('dgram');
 const binary = require('binary')
 
-const logger = require('../helpers/logger')
+const logger = require('../helpers/logger');
 
 function parse_receiver_data(msg) {
     const vars = binary.parse(msg)
@@ -20,7 +20,7 @@ function parse_receiver_data(msg) {
     return vars;
 }
 
-function create_rx_socket(stream) {
+function create_rx_socket(connection) {
     const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 352 });
     socket.bind(process.env.DMR_TARGET_TX_PORT);
 
@@ -40,7 +40,10 @@ function create_rx_socket(stream) {
         const { header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
         if (header?.toString('ascii') === 'USRP') {
             if (type == 0) {
-                stream.push(audio);
+                connection.play(stream.Readable.from(audio), {
+                    type: 'converted',
+                    bitrate: 8 
+                });
                 if (keyup != last_key) {
                     if (keyup) {
                         logger.info('RX', 'KEYED');
