@@ -28,7 +28,7 @@ function create_rx_socket(connection) {
     const encoder = new OpusScript(8000, 1, OpusScript.Application.AUDIO);
     const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 352 });
     socket.bind(process.env.DMR_TARGET_TX_PORT);
-    let last_key = null;
+    let last_key = 0;
     let q = new Queue((opusBuffer, cb) => {
         const opusStream = stream.Readable.from(opusBuffer);
         opusStream.on("close", () => {
@@ -56,13 +56,11 @@ function create_rx_socket(connection) {
             if (type == 0) {
                 const opusBuffer = encoder.encode(audio, 160);
                 q.push(opusBuffer)
-                if (keyup != last_key) {
-                    if (keyup) {
-                        logger.info('RX', 'STOP RECEIVING');
-                    } else {
-                        logger.info('RX', 'RECEIVING');
-                    }
-                    last_key = keyup;
+                if (last_key !== 0 && keyup == 0) {
+                    logger.info('RX', 'STOP RECEIVING');
+                } else {
+                    logger.info('RX', 'RECEIVING');
+                    last_key += 1
                 }
             }
         } else {
