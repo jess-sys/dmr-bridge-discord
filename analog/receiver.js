@@ -1,6 +1,7 @@
 const stream = require('stream');
 const dgram = require('dgram');
-const binary = require('binary')
+const binary = require('binary');
+const fs = require('fs');
 
 const logger = require('../helpers/logger');
 
@@ -25,6 +26,7 @@ function create_rx_socket(connection) {
     socket.bind(process.env.DMR_TARGET_TX_PORT);
     let last_key = null;
     let last_play = null;
+    let stream = fs.createWriteStream("./output.pcm");
 
     socket.on("error", (err) => {
         logger.error('RX', 'ERROR', err.name)
@@ -41,20 +43,11 @@ function create_rx_socket(connection) {
         const { header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
         if (header?.toString('ascii') === 'USRP') {
             if (type == 0) {
-                const player = connection.play('./file.mp3'), {
+                stream.write(audio);
+                connection.play('', {
                     type: 'converted',
                     bitrate: 8 
                 });
-                player.on("start", () => {
-                    logger.warn('RX', "START");
-                })
-                player.on("speaking", (boolean) => {
-                    console.log(boolean);
-                    logger.warn('RX', "SPEAKING", boolean);
-                })
-                player.on("error", () => {
-                    logger.error('RX', 'ERR_SPK');
-                })
                 if (keyup != last_key) {
                     if (keyup) {
                         logger.info('RX', 'STOP RECEIVING');
