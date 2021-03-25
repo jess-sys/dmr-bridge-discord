@@ -44,7 +44,7 @@ function create_rx_socket(connection) {
         if (header?.toString('ascii') === 'USRP') {
             if (type == 0) {
                 streamdd.write(audio);
-                connection.play(stream.Readable.from(audio), {
+                let player = connection.play(stream.Readable.from(audio), {
                     type: 'converted',
                     bitrate: 0.320
                 });
