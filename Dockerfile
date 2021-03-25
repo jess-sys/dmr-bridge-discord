@@ -8,4 +8,4 @@ WORKDIR /app
 RUN yarn install --production
 
 # At runtime
-CMD ["node", "index.js"]
+CMD ["yarn", "start"]
