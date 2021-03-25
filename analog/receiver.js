@@ -42,7 +42,6 @@ function create_rx_socket(connection) {
         const { header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
         if (header?.toString('ascii') === 'USRP') {
             if (type == 0) {
-                streamdd.write(audio);
                 let player = connection.play(stream.Readable.from(encoder.encode(audio)));
                 player.on("start", () => {
                     logger.warn('RX', "START");
