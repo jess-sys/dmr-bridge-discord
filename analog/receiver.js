@@ -35,7 +35,7 @@ function create_rx_socket(connection) {
         const dispatcher = connection.play(opusStream, { type: 'opus' });
         dispatcher.on("finish", cb);
     }, {
-        merge: (buffer0, buffer1, cb) {
+        merge: (buffer0, buffer1, cb) => {
             buffer0.data += buffer1.data;
             cb(null, buffer0);
         }
