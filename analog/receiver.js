@@ -1,4 +1,5 @@
 const dgram = require('dgram');
+const stream = require('stream');
 const binary = require('binary');
 const fs = require('fs');
 const { OpusEncoder } = require('@discordjs/opus');
