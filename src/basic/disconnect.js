@@ -12,6 +12,10 @@ module.exports = class DisconnectCommand extends Command {
     }
 
     run(message) {
-        message.say("Disconnect...");
+        if (message.guild.me.voice.channel) {
+            message.guild.me.voice.channel.leave();
+        } else {
+            message.reply("I should be in a voice channel to execute this command");
+        }
     }
 }
