@@ -5,11 +5,13 @@
   "main": "index.js",
   "repository": "https://github.com/jess-sys/DMRBridgeDiscord",
   "author": "Jessy SOBREIRO <jessy.sobreiro@epitech.eu>",
-  "license": "GPLv3",
+  "license": "GPL-3.0-only",
   "dependencies": {
+    "discord.js": "^12.5.1",
+    "discord.js-commando": "^0.12.2",
     "dotenv": "^8.2.0"
-  }
+  },
   "scripts": {
-    "start" : "node index.js"
+    "start": "node index.js"
   }
 }
