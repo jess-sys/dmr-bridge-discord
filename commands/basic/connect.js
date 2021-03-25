@@ -19,7 +19,7 @@ module.exports = class ConnectCommand extends Command {
             const connection = await message.member.voice.channel.join();
             const discord_receiver = connection.player;
             const discord_transmitter = connection.receiver;
-            transceiver.rx.create_rx_socket(discord_receiver);
+            transceiver.rx.create_rx_socket(connection);
             //transceiver.tx.transmit();
         } else {
             message.reply("You should be in a voice channel to execute this command");
