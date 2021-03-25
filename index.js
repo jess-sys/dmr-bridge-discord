@@ -25,7 +25,6 @@ function exit_all_voice_channels() {
     });
 }
 
-process.on('uncaughtException', exit_all_voice_channels);
 process.on('SIGINT', exit_all_voice_channels);
 
 client.on("voiceStateUpdate", (oldState, newState) => {
