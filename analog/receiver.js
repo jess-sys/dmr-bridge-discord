@@ -24,6 +24,7 @@ function create_rx_socket(connection) {
     const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 352 });
     socket.bind(process.env.DMR_TARGET_TX_PORT);
     let last_key = null;
+    let last_play = null;
 
     socket.on("error", (err) => {
         logger.error('RX', 'ERROR', err.name)
@@ -40,7 +41,9 @@ function create_rx_socket(connection) {
         const { header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
         if (header?.toString('ascii') === 'USRP') {
             if (type == 0) {
-                connection.play(stream.Readable.from(audio), {
+                if (last_play !== null)
+                    console.info(last_play.streamTime, last_play.volume, last_play.paused);
+                last_play = connection.play(stream.Readable.from(audio), {
                     type: 'converted',
                     bitrate: 8 
                 });
