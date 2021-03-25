@@ -12,7 +12,7 @@ client.registry
     ])
     .registerDefaultGroups()
     .registerDefaultCommands()
-    .registerCommandsIn(path.join(__dirname, "src"));
+    .registerCommandsIn(path.join(__dirname, "commands"));
 
 client.once("ready", () => {
 	console.log(`Logged in as ${client.user.tag}! (${client.user.id})`);

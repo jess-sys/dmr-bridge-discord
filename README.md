@@ -29,7 +29,7 @@ yarn install
 First edit the `.env` file to reflect your infrastructure :
 
 * `BOT_TOKEN` : see [this link](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token) to know how to get a token
-* `DMR_SERVER` : your Analog Bridge IP
+* `DMR_TARGET` : your Analog Bridge IP
 
 #### Manually
 

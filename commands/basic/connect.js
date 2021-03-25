@@ -1,4 +1,5 @@
 const { Command } = require("discord.js-commando");
+const transceiver = require('../../analog');
 
 module.exports = class ConnectCommand extends Command {
     constructor(client) {
@@ -16,8 +17,10 @@ module.exports = class ConnectCommand extends Command {
             if (message.member.voice.channel.id === message.guild.me.voice.channel?.id)
                 return;
             const connection = await message.member.voice.channel.join();
-            const player = connection.player;
-            const receiver = connection.receiver;
+            const discord_transmitter = connection.player;
+            const discord_receiver = connection.receiver;
+            transceiver.rx.create_rx_socket(discord_receiver);
+            //transceiver.tx.transmit();
         } else {
             message.reply("You should be in a voice channel to execute this command");
         }
