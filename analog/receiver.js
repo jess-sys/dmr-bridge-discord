@@ -40,6 +40,10 @@ function create_rx_socket(connection) {
 
     socket.bind(process.env.DMR_TARGET_TX_PORT);
     
+    connection.on("disconnect", () => socket.close());
+    connection.on("error", () => socket.close());
+    connection.on("failed", () => socket.close());
+
     socket.on("error", (err) => {
         logger.error('RX', 'ERROR', err.name)
         socket.close();

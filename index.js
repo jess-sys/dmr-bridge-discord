@@ -16,6 +16,18 @@ client.registry
 
 client.once("ready", () => {
 	console.log(`Logged in as ${client.user.tag}! (${client.user.id})`);
+
+    if (process.env.AUTO_JOIN === 'true') {
+        
+    }
+});
+
+process.on('SIGINT', () => {
+    client.guilds.cache.forEach((guild) => {
+        if (guild.me.voice.channel)
+            guild.me.voice.channel.leave();
+    });
+    process.exit();
 });
 
 client.on("voiceStateUpdate", (oldState, newState) => {
