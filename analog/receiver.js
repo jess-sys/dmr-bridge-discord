@@ -16,7 +16,7 @@ function create_rx_socket(connection) {
         logger.success('RX', 'AUDIO', 'Got new audio frame of size ' + buffer.length);
         //const opusBuffer = encoder.encode(buffer, buffer.length / 2);
         //const opusStream = stream.Readable.from(opusBuffer);
-        connection.play(bufferStream, { type: "converted", bitrate: 128 });
+        connection.play(bufferStream, { type: "converted", bitrate: 0.320 });
     }, 150);
 
     socket.bind(process.env.DMR_TARGET_TX_PORT);
