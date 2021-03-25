@@ -28,16 +28,17 @@ function create_rx_socket(connection) {
     const encoder = new OpusScript(8000, 1, OpusScript.Application.AUDIO);
     const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 352 });
     let last_key = 0;
-    let q = new Queue(({id, buffer}, cb) => {
-        console.log(buffer, buffer.length);
+    let q = new Queue((obj, cb) => {
+        console.log(obj);
+        const buffer = obj.buffer;
         const opusBuffer = encoder.encode(audio, buffer.length / 2);
         const opusStream = stream.Readable.from(opusBuffer);
         const dispatcher = connection.play(opusStream, { type: 'opus' });
         dispatcher.on("finish", cb);
     }, {
-        merge: (buffer0, buffer1, cb) => {
-            buffer0.buffer = Buffer.concat(buffer0.buffer, buffer1.buffer);
-            cb(null, buffer0);
+        merge: (obj0, obj1, cb) => {
+            obj0.buffer = Buffer.concat(obj0.buffer, obj1.buffer);
+            cb(null, obj0);
         }
     });
 
