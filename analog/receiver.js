@@ -16,7 +16,7 @@ function create_rx_socket(connection) {
         const opusStream = stream.Readable.from(opusBuffer);
         logger.info('RX', 'PTT', 'PTT button released. Pushing audio frame of size ' + queueBuffer.reduce((acc, buf) => acc + buf.length, 0));
         connection.play(opusStream, { type: 'opus' });
-        queueBuffer = queueBuffer.splice(0, queueLength);
+        queueBuffer.splice(0, queueLength);
     }, 150);
 
     socket.bind(process.env.DMR_TARGET_TX_PORT);
