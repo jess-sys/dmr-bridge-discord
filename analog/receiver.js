@@ -47,8 +47,8 @@ function create_rx_socket(connection) {
                 const opusStream = stream.Readable.from(encoder.encode(audio, 160))
                 opusStream.on("close", () => {
                     logger.warn('RX', 'STOP_SPK')
-                })
-                last_player = connection.play(opusStream), {
+                });
+                last_player = connection.play(opusStream, {
                     type: 'opus'
                 });
                 last_player.on("start", () => {
