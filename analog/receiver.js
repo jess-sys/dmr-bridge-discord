@@ -12,10 +12,11 @@ function create_rx_socket(connection) {
         if (queueBuffer.length === 0)
             return;
         const buffer = Buffer.concat(queueBuffer);
+        const bufferStream = stream.Readable.from(buffer);
         logger.success('RX', 'AUDIO', 'Got new audio frame of size ' + buffer.length);
-        const opusBuffer = encoder.encode(buffer, 160);
-        const opusStream = stream.Readable.from(opusBuffer);
-        connection.play(opusStream, { type: "opus" });
+        //const opusBuffer = encoder.encode(buffer, buffer.length / 2);
+        //const opusStream = stream.Readable.from(opusBuffer);
+        connection.play(bufferStream, { type: "converted" });
     }, 150);
 
     socket.bind(process.env.DMR_TARGET_TX_PORT);
