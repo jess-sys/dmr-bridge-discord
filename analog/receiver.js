@@ -10,7 +10,7 @@ const logger = require('../helpers/logger');
 
 function parse_receiver_data(msg) {
     let vars = binary.parse(msg)
-        .buffer('header', 4)
+        .buffer('usrp', 4)
         .word32bs('seq')
         .word32bs('memory')
         .word32bs('keyup')
@@ -20,7 +20,7 @@ function parse_receiver_data(msg) {
         .word32bs('reserved')
         .buffer('audio', 320)
         .vars;
-    vars.header = vars?.header?.toString();
+    vars.usrp = vars?.usrp?.toString();
     return vars;
 }
 
@@ -53,9 +53,9 @@ function create_rx_socket(connection) {
     socket.on("message", (msg, rinfo) => {
         if (rinfo.address !== process.env.DMR_TARGET || rinfo.size !== 352)
             return;
-        const { header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
+        const { usrp, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
         console.log({
-            "header": header, 
+            "usrp": usrp, 
             "seq": seq, 
             "memory": memory, 
             "keyup": keyup, 
@@ -64,7 +64,7 @@ function create_rx_socket(connection) {
             "mpxid": mpxid, 
             "reserved": reserved
         })
-        if (header === 'USRP') {
+        if (usrp === 'USRP') {
             if (keyup == 0) {
                 logger.info('RX', 'PTT', 'A Radio pressed the PTT button');
             }
