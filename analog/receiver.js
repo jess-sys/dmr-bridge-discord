@@ -13,7 +13,7 @@ function create_rx_socket(connection) {
             return;
         const opusBuffer = queueBuffer.map((buffer) => encoder.encode(buffer, 160));
         const opusStream = stream.Readable.from(opusBuffer);
-        logger.info('RX', 'PTT', 'PTT button released. Pushing audio frame of size ' + queueBuffer.reduce((acc, buf) => acc + buf.length), 0);
+        logger.info('RX', 'PTT', 'PTT button released. Pushing audio frame of size ' + queueBuffer.reduce((acc, buf) => acc + buf.length, 0));
         connection.play(opusStream, { type: 'opus' });
         queueBuffer = [];
     }, 150);
