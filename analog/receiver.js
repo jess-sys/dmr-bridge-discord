@@ -54,7 +54,6 @@ function create_rx_socket(connection) {
         const { header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
         console.log({
             "header": header, 
-            "eye": eye, 
             "seq": seq, 
             "memory": memory, 
             "keyup": keyup, 
