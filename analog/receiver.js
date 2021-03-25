@@ -26,7 +26,7 @@ function create_rx_socket(connection) {
     socket.bind(process.env.DMR_TARGET_TX_PORT);
     let last_key = null;
     let last_play = null;
-    let stream = fs.createWriteStream("./output.pcm");
+    let streamdd = fs.createWriteStream("./output.pcm");
 
     socket.on("error", (err) => {
         logger.error('RX', 'ERROR', err.name)
@@ -43,8 +43,8 @@ function create_rx_socket(connection) {
         const { header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
         if (header?.toString('ascii') === 'USRP') {
             if (type == 0) {
-                stream.write(audio);
-                connection.play('', {
+                streamdd.write(audio);
+                connection.play(stream.Readable.from(audio), {
                     type: 'converted',
                     bitrate: 8 
                 });
