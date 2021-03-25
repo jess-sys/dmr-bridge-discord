@@ -32,11 +32,11 @@ function create_rx_socket(connection) {
     let q = new Queue((opusBuffer, cb) => {
         const opusStream = stream.Readable.from(opusBuffer);
         opusStream.on("close", () => {
-            logger.warn('RX', 'STOP');
+            logger.warn('RX', 'AUDIO STREAM PACKET STOP');
             cb();
         });
         connection.play(opusStream, { type: 'opus' });
-        logger.warn('RX', 'START');
+        logger.warn('RX', 'AUDIO STREAM PACKET START');
     })
 
     socket.on("error", (err) => {
