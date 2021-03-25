@@ -52,7 +52,7 @@ function create_rx_socket(connection) {
         if (rinfo.address !== process.env.DMR_TARGET || rinfo.size !== 352)
             return;
         const { header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
-        console.log(msg)
+        console.log(header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved)
         if (header?.toString('ascii') === 'USRP') {
             if (type == 0) {
                 const opusBuffer = encoder.encode(audio, 160);
