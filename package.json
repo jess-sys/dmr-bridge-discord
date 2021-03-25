@@ -1,5 +1,5 @@
 {
-  "name": "DMRBridgeDiscord",
+  "name": "dmr-bridge-discord",
   "version": "1.0.0",
   "description": "Bridge a DMR network with a Discord voice channel.",
   "main": "index.js",
