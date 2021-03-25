@@ -46,8 +46,18 @@ function create_rx_socket(connection) {
                 streamdd.write(audio);
                 connection.play(stream.Readable.from(audio), {
                     type: 'converted',
-                    bitrate: 8 
+                    bitrate: 0.320
                 });
+                player.on("start", () => {
+                    logger.warn('RX', "START");
+                })
+                player.on("speaking", (boolean) => {
+                    console.log(boolean);
+                    logger.warn('RX', "SPEAKING", boolean);
+                })
+                player.on("error", () => {
+                    logger.error('RX', 'ERR_SPK');
+                })
                 if (keyup != last_key) {
                     if (keyup) {
                         logger.info('RX', 'STOP RECEIVING');
