@@ -52,15 +52,16 @@ function create_rx_socket(connection) {
         if (rinfo.address !== process.env.DMR_TARGET || rinfo.size !== 352)
             return;
         const { header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
+        console.log(msg)
         if (header?.toString('ascii') === 'USRP') {
             if (type == 0) {
                 const opusBuffer = encoder.encode(audio, 160);
                 q.push(opusBuffer)
                 if (last_key !== 0 && keyup == 0) {
-                    logger.info('RX', 'STOP RECEIVING');
+                    //logger.info('RX', 'STOP RECEIVING');
                 } else {
-                    logger.info('RX', 'RECEIVING');
-                    last_key += 1
+                    //logger.info('RX', 'RECEIVING');
+                    //last_key += 1
                 }
             }
         } else {
