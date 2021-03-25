@@ -30,12 +30,8 @@ function create_rx_socket(connection) {
     let last_key = 0;
     let q = new Queue((opusBuffer, cb) => {
         const opusStream = stream.Readable.from(opusBuffer);
-        opusStream.on("close", () => {
-            //    logger.warn('RX', 'AUDIO STREAM PACKET STOP');
-            cb();
-        });
-        connection.play(opusStream, { type: 'opus' });
-        //logger.warn('RX', 'AUDIO STREAM PACKET START');
+        const dispatcher = connection.play(opusStream, { type: 'opus' });
+        dispatcher.on("finish", cb);
     });
 
     socket.bind(process.env.DMR_TARGET_TX_PORT);
@@ -70,7 +66,7 @@ function create_rx_socket(connection) {
             }
             if (type == 0) {
                 const opusBuffer = encoder.encode(audio, 160);
-                q.push(opusBuffer);
+                q.push({ id: "buffer", count: opusBuffer });
             }
         } else {
             logger.warn('RX', 'WARNING', 'Badly formatted message, ignoring');
