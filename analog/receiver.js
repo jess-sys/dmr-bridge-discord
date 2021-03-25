@@ -11,12 +11,13 @@ function create_rx_socket(connection) {
     let garbageListener = setTimeout(() => {
         if (queueBuffer.length === 0)
             return;
-        const buffer = Buffer.concat(queueBuffer);
-        const bufferStream = stream.Readable.from(buffer);
-        logger.success('RX', 'AUDIO', 'Got new audio frame of size ' + buffer.length);
+        const queueBufferCopy = queueBuffer;
+        const bufferStream = stream.Readable.from(queueBufferCopy);
+        logger.info('RX', 'PTT', 'PTT button released. Pushing audio frame of size ' + buffer.length);
         //const opusBuffer = encoder.encode(buffer, buffer.length / 2);
         //const opusStream = stream.Readable.from(opusBuffer);
-        connection.play(bufferStream, { type: "converted", bitrate: 0.001 });
+        connection.play(bufferStream, { type: "converted" });
+        queueBuffer = [];
     }, 150);
 
     socket.bind(process.env.DMR_TARGET_TX_PORT);
@@ -34,6 +35,9 @@ function create_rx_socket(connection) {
     socket.on("message", (msg, rinfo) => {
         queueBuffer.push(msg);
         garbageListener.refresh();
+        if (garbageListener.length === 0) {
+            logger.info('RX', 'PTT', 'PTT button pressed');
+        }
     });
 
     socket.on("listening", () => {
