@@ -4,10 +4,8 @@
 name: Release npm package
 
 on:
-  pull_request:
-    branches:
-      - master
-    types: [closed]
+  release:
+    types: [created]
 
 jobs:
   publish-npm:
