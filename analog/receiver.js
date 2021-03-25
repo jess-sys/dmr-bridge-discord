@@ -24,6 +24,7 @@ function parse_receiver_data(msg) {
 
 function create_rx_socket(connection) {
     const encoder = new OpusEncoder(8000, 1);
+    encoder.setBitrate(64000);
     const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 352 });
     socket.bind(process.env.DMR_TARGET_TX_PORT);
     let last_key = null;
