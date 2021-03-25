@@ -23,6 +23,7 @@ function parse_receiver_data(msg) {
 function create_rx_socket(connection) {
     const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 352 });
     socket.bind(process.env.DMR_TARGET_TX_PORT);
+    let last_key = null;
 
     socket.on("error", (err) => {
         logger.error('RX', 'ERROR', err.name)
@@ -36,7 +37,6 @@ function create_rx_socket(connection) {
     socket.on("message", (msg, rinfo) => {
         if (rinfo.address !== process.env.DMR_TARGET || rinfo.size !== 352)
             return;
-        let last_key = null;
         const { header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
         if (header?.toString('ascii') === 'USRP') {
             if (type == 0) {
