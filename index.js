@@ -3,7 +3,6 @@ const { CommandoClient } = require("discord.js-commando");
 const path = require("path");
 const client = new CommandoClient({
     commandPrefix: process.env.BOT_PREFIX,
-    owner: ["231802014290411520", "286920726626435072"]
 })
 
 client.registry
