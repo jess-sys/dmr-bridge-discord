@@ -9,14 +9,14 @@ function create_rx_socket(connection) {
     const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 320 });
     let queueBuffer = [];
     let garbageListener = garbageListener = setTimeout(() => {
+        if (queueBuffer.length === 0)
+            return;
         const buffer = Buffer.concat(queueBuffer);
         console.log(buffer.length);
         const opusBuffer = encoder.encode(buffer, buffer.length / 2);
         const opusStream = stream.Readable.from(opusBuffer);
         connection.play(opusStream, { type: "opus" });
     }, 150);
-
-    clearTimeout(garbageListener);
 
     socket.bind(process.env.DMR_TARGET_TX_PORT);
     
