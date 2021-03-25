@@ -6,7 +6,7 @@ const logger = require('../helpers/logger');
 
 function create_rx_socket(connection) {
     const encoder = new OpusScript(8000, 1, OpusScript.Application.VOIP);
-    const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 320 });
+    const socket = dgram.createSocket({ type: 'udp4', recvBufferSize: 320 });
     let queueBuffer = [];
     let garbageListener = setTimeout(() => {
         if (queueBuffer.length === 0)
