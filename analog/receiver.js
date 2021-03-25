@@ -41,12 +41,19 @@ function create_rx_socket(connection) {
         const { header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
         if (header?.toString('ascii') === 'USRP') {
             if (type == 0) {
-                if (last_play !== null)
-                    console.info(last_play.streamTime, last_play.volume, last_play.paused);
-                last_play = connection.play(stream.Readable.from(audio), {
+                const player = connection.play(stream.Readable.from(audio), {
                     type: 'converted',
                     bitrate: 8 
                 });
+                player.on("start", () => {
+                    logger.warn('RX', "START");
+                })
+                player.on("speaking", (boolean) => {
+                    logger.warn('RX', "SPEAKING", boolean);
+                })
+                player.on("error", () => {
+                    logger.error('RX', 'ERR_SPK');
+                })
                 if (keyup != last_key) {
                     if (keyup) {
                         logger.info('RX', 'STOP RECEIVING');
