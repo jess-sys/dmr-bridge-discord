@@ -1,46 +1,12 @@
 const dgram = require('dgram');
 const stream = require('stream');
-const binary = require('binary');
-const fs = require('fs');
 const OpusScript = require("opusscript");
-const { Writable } = require('stream');
-var Queue = require('better-queue');
 
 const logger = require('../helpers/logger');
 
-function parse_receiver_data(msg) {
-    let vars = binary.parse(msg)
-        .buffer('usrp', 4)
-        .word32bs('seq')
-        .word32bs('memory')
-        .word32bs('keyup')
-        .word32bs('talkgroup')
-        .word32bs('type')
-        .word32bs('mpxid')
-        .word32bs('reserved')
-        .buffer('audio', 320)
-        .vars;
-    vars.usrp = vars?.usrp?.toString();
-    return vars;
-}
-
 function create_rx_socket(connection) {
-    const encoder = new OpusScript(8000, 1, OpusScript.Application.AUDIO);
-    const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 352 });
-    let last_key = 0;
-    let q = new Queue((obj, cb) => {
-        console.log(obj);
-        const buffer = obj.buffer;
-        const opusBuffer = encoder.encode(audio, buffer.length / 2);
-        const opusStream = stream.Readable.from(opusBuffer);
-        const dispatcher = connection.play(opusStream, { type: 'opus' });
-        dispatcher.on("finish", cb);
-    }, {
-        merge: (obj0, obj1, cb) => {
-            obj0.buffer = Buffer.concat(obj0.buffer, obj1.buffer);
-            cb(null, obj0);
-        }
-    });
+    const encoder = new OpusScript(8000, 1, OpusScript.Application.VOIP);
+    const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 5120 });
 
     socket.bind(process.env.DMR_TARGET_TX_PORT);
     
@@ -55,29 +21,10 @@ function create_rx_socket(connection) {
     })
 
     socket.on("message", (msg, rinfo) => {
-        if (rinfo.address !== process.env.DMR_TARGET || rinfo.size !== 352)
-            return;
-        const { usrp, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
-        console.log({
-            "usrp": usrp, 
-            "seq": seq, 
-            "memory": memory, 
-            "keyup": keyup, 
-            "talkgroup": talkgroup, 
-            "type": type, 
-            "mpxid": mpxid, 
-            "reserved": reserved
-        })
-        if (usrp === 'USRP') {
-            if (keyup == 0) {
-                logger.info('RX', 'PTT', 'A Radio pressed the PTT button');
-            }
-            if (type == 0) {
-                q.push({ id: "buffer", buffer: audio });
-            }
-        } else {
-            logger.warn('RX', 'WARNING', 'Badly formatted message, ignoring');
-        }
+        logger.success('RX', 'AUDIO', 'Got new audio frame of size ' + )
+        connection.play(stream.Readable.from(encoder.encode(msg, rinfo.size / 2)), {
+            type: 'opus'
+        });
     });
 
     socket.on("listening", () => {
