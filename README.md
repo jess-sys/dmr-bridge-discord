@@ -5,7 +5,7 @@
 
 Bridge a DMR network with a Discord voice channel.
 
-# Getting started
+## Getting started
 
 This script is inspired by https://github.com/jess-sys/DMRBridgeWAV/blob/master/DMRBridgeWAV. 
 
@@ -42,13 +42,13 @@ You can use the docker-compose configuration file:
 $ docker-compose up
 ```
 
-# Todo
+## Todo
 * project
 * Docker support
 * pm2 support
 * systemd service support
 
-# Useless stuff (Copyright)
+## Useless stuff (Copyright)
 
 Copyright (C) 2020 Jessy SOBREIRO
 
