@@ -11,7 +11,6 @@ const logger = require('../helpers/logger');
 function parse_receiver_data(msg) {
     const vars = binary.parse(msg)
         .buffer('header', 4)
-        .buffer('eye', 4)
         .word32bs('seq')
         .word32bs('memory')
         .word32bs('keyup')
