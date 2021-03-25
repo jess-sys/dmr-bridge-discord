@@ -1,6 +1,6 @@
 const chalk = require('chalk');
 
-function error(entity, status, message?) {
+function error(entity, status, message) {
     let e_message = "";
     if (message !== undefined) {
         e_message = ' : ' + message
@@ -8,7 +8,7 @@ function error(entity, status, message?) {
     console.log(`[${entity}][${chalk.red(status)}]${e_message}`)
 }
 
-function warn(entity, status, message?) {
+function warn(entity, status, message) {
     let e_message = "";
     if (message !== undefined) {
         e_message = ' : ' + message
@@ -16,7 +16,7 @@ function warn(entity, status, message?) {
     console.log(`[${entity}][${chalk.yellow(status)}]${e_message}`)
 }
 
-function info(entity, status, message?) {
+function info(entity, status, message) {
     let e_message = "";
     if (message !== undefined) {
         e_message = ' : ' + message
@@ -24,7 +24,7 @@ function info(entity, status, message?) {
     console.log(`[${entity}][${chalk.blue(status)}]${e_message}`)
 }
 
-function success(entity, status, message?) {
+function success(entity, status, message) {
     let e_message = "";
     if (message !== undefined) {
         e_message = ' : ' + message
