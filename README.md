@@ -1,8 +1,9 @@
 # dmr-bridge-discord
 
+[![https://nodei.co/npm/dmr-bridge-discord.png?downloads=true&downloadRank=true&stars=true](https://nodei.co/npm/dmr-bridge-discord.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/dmr-bridge-discord)
+
 [![NodeJS](https://img.shields.io/badge/Made_with-NodeJS-green?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
 [![License](https://img.shields.io/badge/License-GPLv3-blue?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
-![Action: Release on NPM](https://github.com/jess-sys/dmr-bridge-discord/actions/workflows/npm-publish.yml/badge.svg)
 
 Bridge a DMR network with a Discord voice channel.
 
