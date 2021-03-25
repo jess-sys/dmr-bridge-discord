@@ -13,7 +13,7 @@ function create_rx_socket(connection) {
             return;
         const queueBufferCopy = queueBuffer;
         const bufferStream = stream.Readable.from(queueBufferCopy);
-        logger.info('RX', 'PTT', 'PTT button released. Pushing audio frame of size ' + buffer.length);
+        logger.info('RX', 'PTT', 'PTT button released. Pushing audio frame');
         //const opusBuffer = encoder.encode(buffer, buffer.length / 2);
         //const opusStream = stream.Readable.from(opusBuffer);
         connection.play(bufferStream, { type: "converted" });
