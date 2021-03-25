@@ -9,7 +9,7 @@ var Queue = require('better-queue');
 const logger = require('../helpers/logger');
 
 function parse_receiver_data(msg) {
-    const vars = binary.parse(msg)
+    let vars = binary.parse(msg)
         .buffer('header', 4)
         .word32bs('seq')
         .word32bs('memory')
@@ -20,6 +20,7 @@ function parse_receiver_data(msg) {
         .word32bs('reserved')
         .buffer('audio', 320)
         .vars;
+    vars.header = vars?.header?.toString();
     return vars;
 }
 
@@ -52,7 +53,7 @@ function create_rx_socket(connection) {
             return;
         const { header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
         console.log({
-            "header": header.toString(), 
+            "header": header, 
             "seq": seq, 
             "memory": memory, 
             "keyup": keyup, 
@@ -61,13 +62,13 @@ function create_rx_socket(connection) {
             "mpxid": mpxid, 
             "reserved": reserved
         })
-        if (header?.toString('ascii') === 'USRP') {
+        if (header === 'USRP') {
+            if (keyup == 0) {
+                logger.info('RX', 'PTT', 'Pressed');
+            }
             if (type == 0) {
                 const opusBuffer = encoder.encode(audio, 160);
-                q.push(opusBuffer)
-                if (keyup == 0) {
-                    logger.info('RX', 'PTT', 'Pressed');
-                }
+                q.push(opusBuffer);
             }
         } else {
             logger.warn('RX', 'WARNING', 'Badly formatted message, ignoring');
