@@ -21,7 +21,7 @@ function create_rx_socket(connection) {
     })
 
     socket.on("message", (msg, rinfo) => {
-        logger.success('RX', 'AUDIO', 'Got new audio frame of size ' + )
+        logger.success('RX', 'AUDIO', 'Got new audio frame of size ' + rinfo.size)
         connection.play(stream.Readable.from(encoder.encode(msg, rinfo.size / 2)), {
             type: 'opus'
         });
