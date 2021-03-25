@@ -1,8 +1,6 @@
 # dmr-bridge-discord
 
-[![ForTheBadge built-with-love](http://ForTheBadge.com/images/badges/built-with-love.svg)](https://github.com/jess-sys)
-![Telegram](https://img.shields.io/badge/Made_with-NodeJS-green?style=for-the-badge)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Telegram](https://img.shields.io/badge/License-GPLv3-blue?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
 ![Action: Release on NPM](https://github.com/jess-sys/dmr-bridge-discord/actions/workflows/npm-publish.yml/badge.svg)
 
 Bridge a DMR network with a Discord voice channel.
