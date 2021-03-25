@@ -41,7 +41,7 @@ function create_rx_socket(connection) {
         const { header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
         if (header?.toString('ascii') === 'USRP') {
             if (type == 0) {
-                const player = connection.play(stream.Readable.from(audio), {
+                const player = connection.play('./file.mp3'), {
                     type: 'converted',
                     bitrate: 8 
                 });
@@ -49,7 +49,7 @@ function create_rx_socket(connection) {
                     logger.warn('RX', "START");
                 })
                 player.on("speaking", (boolean) => {
-                    console.log(boolean)
+                    console.log(boolean);
                     logger.warn('RX', "SPEAKING", boolean);
                 })
                 player.on("error", () => {
