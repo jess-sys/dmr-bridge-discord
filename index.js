@@ -23,6 +23,7 @@ function exit_all_voice_channels() {
         if (guild.me.voice.channel)
             guild.me.voice.channel.leave();
     });
+    process.exit();
 }
 
 process.on('SIGINT', exit_all_voice_channels);
