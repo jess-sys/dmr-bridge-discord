@@ -49,6 +49,7 @@ function create_rx_socket(connection) {
                     logger.warn('RX', "START");
                 })
                 player.on("speaking", (boolean) => {
+                    console.log(boolean)
                     logger.warn('RX', "SPEAKING", boolean);
                 })
                 player.on("error", () => {
