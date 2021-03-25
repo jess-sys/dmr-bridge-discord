@@ -5,6 +5,9 @@
   "main": "index.js",
   "repository": "https://github.com/jess-sys/DMRBridgeDiscord",
   "author": "Jessy SOBREIRO <jessy.sobreiro@epitech.eu>",
+  "contributors": [
+    "Alexandre MONIER <alexandre.monier@epitech.eu>"
+  ],
   "license": "GPL-3.0-only",
   "dependencies": {
     "discord.js": "^12.5.1",
