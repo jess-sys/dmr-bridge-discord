@@ -13,7 +13,7 @@ function create_rx_socket(connection) {
             return;
         const queueBufferCopy = queueBuffer;
         const bufferStream = stream.Readable.from(queueBufferCopy);
-        logger.info('RX', 'PTT', 'PTT button released. Pushing audio frame of size ' + queueBuffer.reduce((acc, buf) => acc + buf.length));
+        logger.info('RX', 'PTT', 'PTT button released. Pushing audio frame of size ' + queueBuffer.reduce((acc, buf) => acc + buf.length), 0);
         //const opusBuffer = encoder.encode(buffer, buffer.length / 2);
         //const opusStream = stream.Readable.from(opusBuffer);
         connection.play(bufferStream);
@@ -33,11 +33,11 @@ function create_rx_socket(connection) {
     })
 
     socket.on("message", (msg, rinfo) => {
-        queueBuffer.push(msg);
-        garbageListener.refresh();
         if (queueBuffer.length === 0) {
             logger.info('RX', 'PTT', 'PTT button pressed');
         }
+        queueBuffer.push(msg);
+        garbageListener.refresh();
     });
 
     socket.on("listening", () => {
