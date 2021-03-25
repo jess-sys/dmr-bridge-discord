@@ -29,7 +29,7 @@ function create_rx_socket(connection) {
     const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 352 });
     let last_key = 0;
     let q = new Queue((buffer, cb) => {
-        console.log(buffer.length);
+        console.log(buffer);
         const opusBuffer = encoder.encode(audio, buffer.length / 2);
         const opusStream = stream.Readable.from(opusBuffer);
         const dispatcher = connection.play(opusStream, { type: 'opus' });
