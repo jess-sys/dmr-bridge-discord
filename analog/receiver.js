@@ -9,16 +9,15 @@ function create_rx_socket(connection) {
     const socket = dgram.createSocket({ type: 'udp4', recvBufferSize: 320 });
     let queueBuffer = [];
     let garbageListener = setInterval(() => {
-        const queueLength = queueBuffer.length;
-        if (queueLength === 0)
+        if (queueBuffer.length === 0)
             return;
-        const opusBuffer = queueBuffer.slice(0, queueLength).map((buffer) => encoder.encode(buffer, 160));
+        const queueMask = queueBuffer.splice(0, queueBuffer.length);
+        const opusBuffer = queueMask.map((buffer) => encoder.encode(buffer, 160));
         const opusStream = stream.Readable.from(opusBuffer);
         if (Number(process.env.VERBOSE) >= 1) {
-            logger.info('RX', 'PTT', 'PTT button pressed (audio size ' + queueBuffer.slice(0, queueLength).reduce((acc, buf) => acc + buf.length, 0) + ')');
+            logger.info('RX', 'PTT', 'PTT button pressed (audio size ' + queueMask.reduce((acc, buf) => acc + buf.length, 0) + ')');
         }
         connection.play(opusStream, { type: 'opus' });
-        queueBuffer.splice(0, queueLength);
     }, 250);
 
     socket.bind(process.env.DMR_TARGET_TX_PORT);
