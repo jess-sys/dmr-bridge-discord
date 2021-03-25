@@ -8,5 +8,5 @@ function create_tx_socket() {
 }
 
 module.exports = {
-    send_audio
+    create_tx_socket
 }
