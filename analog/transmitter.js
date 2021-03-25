@@ -28,10 +28,6 @@ function create_tx_socket(connection) {
                 audioPacket[user.id] = [];
             audioPacket[user.id].push(chunk);
         });
-        audioStream.on('end', () => { 
-            if (user.id in audioPacket)
-                delete audioPacket[user.id];
-        });
     })
 }
 
