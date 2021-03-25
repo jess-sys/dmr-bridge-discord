@@ -27,6 +27,7 @@ function create_rx_socket(connection) {
     const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 352 });
     socket.bind(process.env.DMR_TARGET_TX_PORT);
     let last_key = null;
+    let last_player = null
 
     socket.on("error", (err) => {
         logger.error('RX', 'ERROR', err.name)
@@ -43,17 +44,20 @@ function create_rx_socket(connection) {
         const { header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
         if (header?.toString('ascii') === 'USRP') {
             if (type == 0) {
-                let player = connection.play(stream.Readable.from(encoder.encode(audio, 160)), {
+                const opusStream = stream.Readable.from(encoder.encode(audio, 160))
+                opusStream.on("close", () => {
+                    logger.warn('RX', 'STOP_SPK')
+                })
+                last_player = connection.play(opusStream), {
                     type: 'opus'
                 });
-                player.on("start", () => {
+                last_player.on("start", () => {
                     logger.warn('RX', "START");
                 })
-                player.on("speaking", (boolean) => {
-                    console.log(boolean);
+                last_player.on("speaking", (boolean) => {
                     logger.warn('RX', "SPEAKING", boolean);
                 })
-                player.on("error", () => {
+                last_player.on("error", () => {
                     logger.error('RX', 'ERR_SPK');
                 })
                 if (keyup != last_key) {
