@@ -46,9 +46,9 @@ function create_rx_socket(connection) {
                 });
                 if (keyup != last_key) {
                     if (keyup) {
-                        logger.info('RX', 'KEYED');
+                        logger.info('RX', 'STOP RECEIVING');
                     } else {
-                        logger.info('RX', 'UNKEYED');
+                        logger.info('RX', 'RECEIVING');
                     }
                     last_key = keyup;
                 }
