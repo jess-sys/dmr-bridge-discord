@@ -16,19 +16,17 @@ client.registry
 
 client.once("ready", () => {
 	console.log(`Logged in as ${client.user.tag}! (${client.user.id})`);
-
-    if (process.env.AUTO_JOIN === 'true') {
-        
-    }
 });
 
-process.on('SIGINT', () => {
+function exit_all_voice_channels() {
     client.guilds.cache.forEach((guild) => {
         if (guild.me.voice.channel)
             guild.me.voice.channel.leave();
     });
-    process.exit();
-});
+}
+
+process.on('uncaughtException', exit_all_voice_channels);
+process.on('SIGINT', exit_all_voice_channels);
 
 client.on("voiceStateUpdate", (oldState, newState) => {
     if (newState.channel === null && oldState.channel.members.size === 1 && oldState.channel.id === oldState.guild.me.voice.channel?.id) {

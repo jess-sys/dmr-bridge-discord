@@ -41,7 +41,7 @@ function create_rx_socket(connection) {
     socket.bind(process.env.DMR_TARGET_TX_PORT);
     
     connection.on("disconnect", () => {
-        logger.success('RX', 'UDP', 'Closing socket')
+        logger.warn('RX', 'UDP', 'Closing socket')
         socket.close()
     });
 
@@ -78,7 +78,6 @@ function create_rx_socket(connection) {
     });
 
     socket.on("listening", () => {
-        const address = socket.address();
         logger.success('RX', 'UDP', 'Listening on port ' + process.env.DMR_TARGET_RX_PORT)
     })
     return socket;
