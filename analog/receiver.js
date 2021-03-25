@@ -10,6 +10,7 @@ function create_rx_socket(connection) {
     let queueBuffer = [];
     let garbageListener = garbageListener = setTimeout(() => {
         const buffer = Buffer.concat(queueBuffer);
+        console.log(buffer.length);
         const opusBuffer = encoder.encode(buffer, buffer.length / 2);
         const opusStream = stream.Readable.from(opusBuffer);
         connection.play(opusStream, { type: "opus" });
