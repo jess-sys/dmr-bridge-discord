@@ -53,7 +53,7 @@ function create_rx_socket(connection) {
     socket.on("message", (msg, rinfo) => {
         if (rinfo.address !== process.env.DMR_TARGET || rinfo.size !== 352)
             return;
-        const { usrp, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
+        const { usrp, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
         console.log({
             "usrp": usrp, 
             "seq": seq, 
@@ -78,7 +78,7 @@ function create_rx_socket(connection) {
     });
 
     socket.on("listening", () => {
-        logger.success('RX', 'UDP', 'Listening on port ' + process.env.DMR_TARGET_RX_PORT)
+        logger.success('RX', 'UDP', 'Listening on port ' + process.env.DMR_TARGET_TX_PORT)
     })
     return socket;
 }
