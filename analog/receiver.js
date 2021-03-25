@@ -12,8 +12,8 @@ function create_rx_socket(connection) {
         if (queueBuffer.length === 0)
             return;
         const buffer = Buffer.concat(queueBuffer);
-        console.log(buffer.length);
-        const opusBuffer = encoder.encode(buffer, buffer.length / 2);
+        logger.success('RX', 'AUDIO', 'Got new audio frame of size ' + buffer.length);
+        const opusBuffer = encoder.encode(buffer, 160);
         const opusStream = stream.Readable.from(opusBuffer);
         connection.play(opusStream, { type: "opus" });
     }, 150);
@@ -31,7 +31,6 @@ function create_rx_socket(connection) {
     })
 
     socket.on("message", (msg, rinfo) => {
-        logger.success('RX', 'AUDIO', 'Got new audio frame of size ' + rinfo.size)
         queueBuffer.push(msg);
         garbageListener.refresh();
     });
