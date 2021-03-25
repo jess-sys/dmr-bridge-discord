@@ -2,7 +2,7 @@ const dgram = require('dgram');
 const stream = require('stream');
 const binary = require('binary');
 const fs = require('fs');
-const OpusScript = require("opusscript");
+const { OpusEncoder } = require('@discordjs/opus');
 
 const logger = require('../helpers/logger');
 
@@ -23,8 +23,7 @@ function parse_receiver_data(msg) {
 }
 
 function create_rx_socket(connection) {
-    const encoder = new OpusScript(8000, 1, OpusScript.Application.AUDIO);
-    const frameSize = 160;
+    const encoder = new OpusEncoder(8000, 1);
     const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 352 });
     socket.bind(process.env.DMR_TARGET_TX_PORT);
     let last_key = null;
@@ -44,7 +43,7 @@ function create_rx_socket(connection) {
         const { header, eye, seq, memory, keyup, talkgroup, type, mpxid, reserved, audio } = parse_receiver_data(msg);
         if (header?.toString('ascii') === 'USRP') {
             if (type == 0) {
-                let player = connection.play(stream.Readable.from(encoder.encode(audio, frameSize)), {
+                let player = connection.play(stream.Readable.from(encoder.encode(audio)), {
                     type: 'opus'
                 });
                 player.on("start", () => {
