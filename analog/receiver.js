@@ -27,26 +27,23 @@ function parse_receiver_data(msg) {
 function create_rx_socket(connection) {
     const encoder = new OpusScript(8000, 1, OpusScript.Application.AUDIO);
     const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 352 });
-    socket.bind(process.env.DMR_TARGET_TX_PORT);
     let last_key = 0;
     let q = new Queue((opusBuffer, cb) => {
         const opusStream = stream.Readable.from(opusBuffer);
         opusStream.on("close", () => {
-        //    logger.warn('RX', 'AUDIO STREAM PACKET STOP');
+            //    logger.warn('RX', 'AUDIO STREAM PACKET STOP');
             cb();
         });
         connection.play(opusStream, { type: 'opus' });
         //logger.warn('RX', 'AUDIO STREAM PACKET START');
-    })
+    });
 
+    socket.bind(process.env.DMR_TARGET_TX_PORT);
+    
     socket.on("error", (err) => {
         logger.error('RX', 'ERROR', err.name)
         socket.close();
     })
-
-    socket.on("close", () => {
-
-    });
 
     socket.on("message", (msg, rinfo) => {
         if (rinfo.address !== process.env.DMR_TARGET || rinfo.size !== 352)
@@ -64,7 +61,7 @@ function create_rx_socket(connection) {
         })
         if (header === 'USRP') {
             if (keyup == 0) {
-                logger.info('RX', 'PTT', 'Pressed');
+                logger.info('RX', 'PTT', 'A Radio pressed the PTT button');
             }
             if (type == 0) {
                 const opusBuffer = encoder.encode(audio, 160);
@@ -77,7 +74,7 @@ function create_rx_socket(connection) {
 
     socket.on("listening", () => {
         const address = socket.address();
-        logger.success('RX', 'LISTENING')
+        logger.success('RX', 'LISTENING', 'UDP Listening on port ' + process.env.DMR_TARGET_RX_PORT)
     })
     return socket;
 }
