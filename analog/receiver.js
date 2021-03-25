@@ -32,9 +32,6 @@ function create_rx_socket(connection) {
     })
 
     socket.on("message", (msg, rinfo) => {
-        if (queueBuffer.length === 0) {
-            logger.info('RX', 'PTT', 'PTT button pressed');
-        }
         queueBuffer.push(msg);
     });
 
