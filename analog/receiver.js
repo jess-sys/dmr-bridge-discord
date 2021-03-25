@@ -20,7 +20,7 @@ function parse_receiver_data(msg) {
     return vars;
 }
 
-export function create_rx_socket(stream) {
+function create_rx_socket(stream) {
     const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true, recvBufferSize: 352 });
     socket.bind(process.env.DMR_TARGET_TX_PORT);
 
@@ -60,4 +60,8 @@ export function create_rx_socket(stream) {
         logger.success('RX', 'LISTENING')
     })
     return socket;
+}
+
+module.exports = {
+    create_rx_socket
 }
