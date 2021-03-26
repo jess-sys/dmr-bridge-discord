@@ -6,7 +6,13 @@ const logger = require('../helpers/logger');
 
 function create_tx_socket(connection) {
     const socket = dgram.createSocket({ type: 'udp4' });
-    let audioPacket = {};
+    let audioPackets = {};
+    
+    setInterval(() => {
+        console.log(audioPackets);
+        return;
+    }, 250);
+
     socket.connect(Number(process.env.DMR_TARGET_RX_PORT), process.env.DMR_TARGET);
 
     connection.on("disconnect", () => {
@@ -21,13 +27,9 @@ function create_tx_socket(connection) {
 
     connection.on("speaking", (user, speaking) => {
         const audioStream = connection.receiver.createStream(user, { mode: 'pcm' });
-        if (!audioPacket[user.id]) {
-            audioPacket[user.id] = new stream.Duplex();
-            audioPacket[user.id].on("data", (chunk) => {
-                console.log(chunk, chunk.length);
-            })
-        }
-        const ffmpegCommand = ffmpeg(audioStream)
+        if (user.id in audioPackets === false)
+            audioPackets[user.id] = []
+        const ffmpegStream = ffmpeg(audioStream)
             .fromFormat('f16le')
             .addInputOptions([
                 "-ar 44100",
@@ -35,8 +37,10 @@ function create_tx_socket(connection) {
             ])
             .audioChannels(1)
             .audioFrequency(8000)
-            .output(audioPacket[user.id])
-            .run();
+            .pipe(audioPackets[user.id])
+            .on('data', (chunk) => {
+                audioPackets[user.id].push(chunk);
+            })
     })
 }
 

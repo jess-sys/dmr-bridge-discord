@@ -8,7 +8,8 @@ function create_rx_socket(connection) {
     const encoder = new OpusScript(8000, 1, OpusScript.Application.VOIP);
     const socket = dgram.createSocket({ type: 'udp4', recvBufferSize: 320 });
     let queueBuffer = [];
-    let garbageListener = setInterval(() => {
+    
+    setInterval(() => {
         if (queueBuffer.length === 0)
             return;
         const queueMask = queueBuffer.splice(0, queueBuffer.length);
