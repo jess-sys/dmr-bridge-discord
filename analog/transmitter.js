@@ -1,7 +1,7 @@
 const stream = require('stream');
 const dgram = require('dgram');
-const ffmpeg = require("fluent-ffmpeg");
 
+const converter = require('./converter');
 const logger = require('../helpers/logger');
 
 function create_tx_socket(connection) {
@@ -26,31 +26,13 @@ function create_tx_socket(connection) {
     });
 
     connection.on("speaking", (user, speaking) => {
-        const audioStream = connection.receiver.createStream(user, { mode: 'pcm' });
-        const ffmpegStream = ffmpeg(audioStream)
-            .on('start', (commandLine) => {
-                console.log('Spawned Ffmpeg with command: ' + commandLine);
-            })
-            .on('stderr', function(stderrLine) {
-                console.log('Stderr output: ' + stderrLine);
-            })
-            .fromFormat('s16le')
-            .addInputOptions([
-                "-ar 44100",
-                "-ac 2"
-            ])
-            .audioChannels(1)
-            .audioFrequency(8000)
-            .audioCodec("pcm_s16le")
-            .outputFormat("s16le")
-            .pipe();
-            
         if (user.id in audioPackets === false)
             audioPackets[user.id] = []
-        ffmpegStream.on('data', (chunk) => {
-            console.log('ffmpeg just wrote ' + chunk.length + ' bytes');
-            audioPackets[user.id].push(chunk);
-        })
+        connection.receiver.createStream(user, { mode: 'pcm' })
+            .on("data", (chunk) => {
+                const newChunk = converter.collapse_pcm_data(chunk, 12);
+                audioPackets[user.id].push(newChunk);
+            })
     })
 }
 
