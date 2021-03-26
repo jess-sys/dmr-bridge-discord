@@ -27,8 +27,6 @@ function create_tx_socket(connection) {
 
     connection.on("speaking", (user, speaking) => {
         const audioStream = connection.receiver.createStream(user, { mode: 'pcm' });
-        if (user.id in audioPackets === false)
-            audioPackets[user.id] = []
         const ffmpegStream = ffmpeg(audioStream)
             .fromFormat('s16le')
             .addInputOptions([
@@ -37,10 +35,14 @@ function create_tx_socket(connection) {
             ])
             .audioChannels(1)
             .audioFrequency(8000)
-            .pipe()
-            .on('data', (chunk) => {
-                audioPackets[user.id].push(chunk);
-            })
+            .pipe();
+            
+        if (user.id in audioPackets === false)
+            audioPackets[user.id] = []
+        ffmpegStream.on('data', (chunk) => {
+            console.log('ffmpeg just wrote ' + chunk.length + ' bytes');
+            audioPackets[user.id].push(chunk);
+        })
     })
 }
 
