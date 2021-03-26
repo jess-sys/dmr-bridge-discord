@@ -42,6 +42,7 @@ function create_tx_socket(connection) {
             .audioChannels(1)
             .audioFrequency(8000)
             .audioCodec("pcm_s16le")
+            .outputFormat("s16le")
             .pipe();
             
         if (user.id in audioPackets === false)
