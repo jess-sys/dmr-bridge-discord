@@ -30,7 +30,7 @@ function create_tx_socket(connection) {
         if (user.id in audioPackets === false)
             audioPackets[user.id] = []
         const ffmpegStream = ffmpeg(audioStream)
-            .fromFormat('f16le')
+            .fromFormat('s16le')
             .addInputOptions([
                 "-ar 44100",
                 "-ac 2"
