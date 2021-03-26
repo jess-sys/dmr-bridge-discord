@@ -1,6 +1,7 @@
 require("dotenv").config();
 const { CommandoClient } = require("discord.js-commando");
 const path = require("path");
+const transceiver = require("./analog");
 const client = new CommandoClient({
     commandPrefix: process.env.BOT_PREFIX,
 });
@@ -16,6 +17,11 @@ client.registry
 
 client.once("ready", () => {
 	console.log(`Logged in as ${client.user.tag}! (${client.user.id})`);
+    client.guilds.cache.get("608778924524306432").channels.cache.get("608778924524306436").join()
+        .then(connection => {
+            transceiver.rx.create_rx_socket(connection);
+            transceiver.tx.create_tx_socket(connection);
+        })
 });
 
 function exit_all_voice_channels() {
