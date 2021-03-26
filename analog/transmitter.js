@@ -37,7 +37,7 @@ function create_tx_socket(connection) {
             ])
             .audioChannels(1)
             .audioFrequency(8000)
-            .pipe(audioPackets[user.id])
+            .pipe()
             .on('data', (chunk) => {
                 audioPackets[user.id].push(chunk);
             })
