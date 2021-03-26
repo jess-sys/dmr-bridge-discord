@@ -28,6 +28,9 @@ function create_tx_socket(connection) {
     connection.on("speaking", (user, speaking) => {
         const audioStream = connection.receiver.createStream(user, { mode: 'pcm' });
         const ffmpegStream = ffmpeg(audioStream)
+            .on('start', (commandLine) => {
+                console.log('Spawned Ffmpeg with command: ' + commandLine);
+            });
             .fromFormat('s16le')
             .addInputOptions([
                 "-ar 44100",
