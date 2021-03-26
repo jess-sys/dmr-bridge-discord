@@ -30,7 +30,7 @@ function create_tx_socket(connection) {
         const ffmpegStream = ffmpeg(audioStream)
             .on('start', (commandLine) => {
                 console.log('Spawned Ffmpeg with command: ' + commandLine);
-            });
+            })
             .fromFormat('s16le')
             .addInputOptions([
                 "-ar 44100",
