@@ -31,6 +31,9 @@ function create_tx_socket(connection) {
             .on('start', (commandLine) => {
                 console.log('Spawned Ffmpeg with command: ' + commandLine);
             })
+            .on('stderr', function(stderrLine) {
+                console.log('Stderr output: ' + stderrLine);
+            })
             .fromFormat('s16le')
             .addInputOptions([
                 "-ar 44100",
