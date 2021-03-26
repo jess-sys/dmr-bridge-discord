@@ -49,7 +49,8 @@ docker-compose up
 
 ## Todo
 
-* project
+* transmit
+* dtmf and text messages
 * Docker support
 * pm2 support
 * systemd service support
