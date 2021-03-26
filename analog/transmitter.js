@@ -1,6 +1,8 @@
 const stream = require('stream');
 const dgram = require('dgram');
 
+const logger = require('../helpers/logger');
+
 function create_tx_socket(connection) {
     const socket = dgram.createSocket({ type: 'udp4' });
     let audioPacket = {};
@@ -21,12 +23,13 @@ function create_tx_socket(connection) {
     }, 2000);
 
     connection.on("speaking", (user, speaking) => {
+        return;
         const audioStream = connection.receiver.createStream(user, { mode: 'pcm' });
-        audioStream.on('data', (chunk) => { 
+        audioStream.on('data', (chunk) => {
             console.log(chunk, chunk.length);
             if (!(user.id in audioPacket))
                 audioPacket[user.id] = [];
-            audioPacket[user.id].push(chunk);
+            audioPacket[user.id].push({date: Date.now(), chunk});
         });
     })
 }
