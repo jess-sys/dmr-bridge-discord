@@ -5,7 +5,6 @@ const ffmpeg = require("fluent-ffmpeg");
 const logger = require('../helpers/logger');
 
 function create_tx_socket(connection) {
-    const converter = new Converter();
     const socket = dgram.createSocket({ type: 'udp4' });
     let audioPacket = {};
     socket.connect(Number(process.env.DMR_TARGET_RX_PORT), process.env.DMR_TARGET);
