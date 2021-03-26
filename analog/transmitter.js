@@ -23,7 +23,7 @@ function create_tx_socket(connection) {
     connection.on("speaking", (user, speaking) => {
         const audioStream = connection.receiver.createStream(user, { mode: 'pcm' });
         const inputStream = converter.createInputStream({
-            f: "f32le",
+            f: "f16le",
             ac: 2
         })
         const outputStream = converter.createOutputStream({
