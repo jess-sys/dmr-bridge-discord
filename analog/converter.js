@@ -1,3 +1,19 @@
+function adjust_buffer(buffer, newSize) {
+    if (newSize == buffer.length)
+        return buffer;
+    const tmpBuffer = Buffer.alloc(newSize - buffer.length);
+    const newBuffer = Buffer.concat([tmpBuffer, buffer]);
+    return newBuffer;
+}
+
+function split_buffer(buffer, frameSize) {
+    const size = buffer.length / frameSize;
+    const array = new Array(size);
+    for (let index = 0; index < size; index++)
+        array[index] = Buffer.from(buffer.slice(index * frameSize, (index + 1) * frameSize));
+    return array;
+}
+
 function collapse_pcm_data(chunks, channels) {
     if (Buffer.isBuffer(chunks) && Number.isInteger(channels)) {
         const packetSize = channels * 2;
@@ -12,13 +28,20 @@ function collapse_pcm_data(chunks, channels) {
         }
         return newChunk;
     } else if (Array.isArray(chunks)) {
-        const newChunk = Buffer.allocUnsafe(chunk[0].length);
-        const channels = chunks.length;
-        for (let newIndex = 0; newIndex < chunk[0].length; newIndex += 2) {
+        const maxLength = chunks.reduce((max, chunk) => Math.max(max, chunk.length), 0);
+        const newAdjustedChunks = chunks.map((chunk) => adjust_buffer(chunk, maxLength));
+        const newChunk = Buffer.allocUnsafe(maxLength);
+        for (let newIndex = 0; newIndex < maxLength; newIndex += 2) {
             let collapsedData = 0;
-            for (const chunk of chunks)
-                collapsedData += chunk.readInt16LE(newIndex);
-            collapsedData = ~~(collapsedData / channels);
+            let collaspedChunk = 0;
+            for (const chunk of newAdjustedChunks) {
+                const data = chunk.readInt16LE(newIndex);
+                if (data) {
+                    collaspedChunk += 1;
+                    collapsedData += data;
+                }
+            }
+            collapsedData = collapsedData / collaspedChunk;
             newChunk.writeInt16LE(collapsedData, newIndex);
         }
         return newChunk;
@@ -36,5 +59,7 @@ function interpolate_pcm_data(chunk) {
 }
 
 module.exports = {
-    collapse_pcm_data
+    collapse_pcm_data,
+    adjust_buffer,
+    split_buffer
 }

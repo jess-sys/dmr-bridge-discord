@@ -4,13 +4,42 @@ const dgram = require('dgram');
 const converter = require('./converter');
 const logger = require('../helpers/logger');
 
+function create_header(seq, transmit) {
+    const header = Buffer.alloc(32);
+    header.write("USRP", 0);
+    header.writeUInt16BE(seq, 4);
+    header.writeUInt16BE(transmit, 12);
+    return header;
+}
+
 function create_tx_socket(connection) {
     const socket = dgram.createSocket({ type: 'udp4' });
     let audioPackets = {};
+    let seq = 0;
     
     setInterval(() => {
-        console.log(audioPackets);
-        return;
+        let rawAudio = Object.values(audioPackets);
+        if (rawAudio.length === 0)
+            return;
+        audioPackets = {};
+        rawAudio = rawAudio.map((chunks) => Buffer.concat(chunks));
+        rawAudio = converter.collapse_pcm_data(rawAudio);
+        rawAudio = converter.split_buffer(rawAudio, 320);
+        const startHeader = create_header(seq, true);
+        seq += 1;
+        socket.send(startHeader);
+        stream.Readable.from(rawAudio)
+            .on("data", (chunk) => {
+                const header = create_header(seq, true);
+                seq += 1
+                const data = Buffer.concat(header, chunk);
+                socket.send(data);
+            })
+            .on("end", () => {
+                const endHeader = create_header(seq, false);
+                seq += 1
+                socket.send(endHeader);
+            })
     }, 250);
 
     socket.connect(Number(process.env.DMR_TARGET_RX_PORT), process.env.DMR_TARGET);
@@ -30,7 +59,6 @@ function create_tx_socket(connection) {
             audioPackets[user.id] = []
         connection.receiver.createStream(user, { mode: 'pcm' })
             .on("data", (chunk) => {
-                console.log("Received chunk of size " + chunk.length);
                 const newChunk = converter.collapse_pcm_data(chunk, 12);
                 audioPackets[user.id].push(newChunk);
             })
