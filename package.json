@@ -15,7 +15,7 @@
     "discord.js": "^12.5.1",
     "discord.js-commando": "^0.12.2",
     "dotenv": "^8.2.0",
-    "ffmpeg-stream": "^0.7.0",
+    "fluent-ffmpeg": "^2.1.2",
     "opusscript": "^0.0.8"
   },
   "scripts": {
