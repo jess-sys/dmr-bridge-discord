@@ -30,6 +30,7 @@ function create_tx_socket(connection) {
             audioPackets[user.id] = []
         connection.receiver.createStream(user, { mode: 'pcm' })
             .on("data", (chunk) => {
+                console.log("Received chunk of size " + chunk.length);
                 const newChunk = converter.collapse_pcm_data(chunk, 12);
                 audioPackets[user.id].push(newChunk);
             })
