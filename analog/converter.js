@@ -6,7 +6,7 @@ function collapse_pcm_data(chunks, channels) {
         for (let newIndex = 0; newIndex < newLength; newIndex += 2) {
             let collapsedData = 0;
             for (let offset = 0; offset < packetSize; offset += 2)
-                collapsedData += chunks.readInt16LE(newIndex * packetSize + offset);
+                collapsedData += chunks.readInt16LE(newIndex * channels + offset);
             collapsedData = ~~(collapsedData / channels);
             newChunk.writeInt16LE(collapsedData, newIndex);
         }
@@ -25,6 +25,14 @@ function collapse_pcm_data(chunks, channels) {
     } else {
         throw new Error("Invalid parameters.");
     }
+}
+
+function expand_pcm_data(chunk, channel) {
+    
+}
+
+function interpolate_pcm_data(chunk) {
+
 }
 
 module.exports = {
