@@ -1,8 +1,24 @@
 const dgram = require('dgram');
 const stream = require('stream');
+const binary = require('binary');
 const OpusScript = require("opusscript");
 
 const logger = require('../helpers/logger');
+
+function parse_receiver_data(msg) {
+    const vars = binary.parse(msg)
+        .buffer('usrp', 4)
+        .word32bs('seq')
+        .word32bs('memory')
+        .word32bs('keyup')
+        .word32bs('talkgroup')
+        .word32bs('type')
+        .word32bs('mpxid')
+        .word32bs('reserved')
+        .buffer('audio', 320)
+        .vars;
+    return vars;
+}
 
 function create_rx_socket(connection) {
     const encoder = new OpusScript(8000, 1, OpusScript.Application.VOIP);
@@ -34,7 +50,8 @@ function create_rx_socket(connection) {
     })
 
     socket.on("message", (msg, rinfo) => {
-        queueBuffer.push(msg);
+        const data = parse_receiver_data(msg);
+        queueBuffer.push(data.audio);
     });
 
     socket.on("listening", () => {

@@ -11,6 +11,7 @@
   "license": "GPL-3.0-only",
   "dependencies": {
     "@discordjs/opus": "^0.5.0",
+    "binary": "^0.3.0",
     "chalk": "^4.1.0",
     "discord.js": "^12.5.1",
     "discord.js-commando": "^0.12.2",
