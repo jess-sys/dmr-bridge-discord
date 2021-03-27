@@ -51,8 +51,8 @@ function create_tx_socket(connection) {
                 const data = Buffer.concat([header, chunk]);
                 await send_data(socket, data, true);
             }
-            //const endHeader = create_header(seq, false);
-            //await send_data(socket, endHeader);
+            const endHeader = create_header(seq, false);
+            await send_data(socket, endHeader);
         } catch {
             socket.close();
         }
