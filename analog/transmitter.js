@@ -8,7 +8,7 @@ function create_header(seq, transmit) {
     const header = Buffer.alloc(32);
     header.write("USRP", 0);
     header.writeUInt16BE(seq, 4);
-    header.writeUInt16BE(transmit, 12);
+    header.writeUInt16BE(Number(transmit), 12);
     return header;
 }
 
