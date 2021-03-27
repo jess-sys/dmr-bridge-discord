@@ -15,20 +15,12 @@ function create_header(seq, transmit) {
     return header;
 }
 
-function send_data(socket, chunk, isAudio) {
+function send_data(socket, chunk) {
     return new Promise((resolve, reject) => {
-        const start = Date.now();
         socket.send(chunk, (err) => {
             if (err)
                 reject(err);
-            if (!isAudio)
-                resolve();
-            const loop = setInterval(() => {
-                if (Date.now() - start >= 25) {
-                    clearInterval(loop);
-                    resolve();
-                }
-            }, 1);
+            resolve();
         })
     })
 }
