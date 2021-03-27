@@ -15,12 +15,20 @@ function create_header(seq, transmit) {
     return header;
 }
 
-function send_data(socket, chunk) {
+function send_data(socket, chunk, isAudio) {
     return new Promise((resolve, reject) => {
+        const start = Date.now();
         socket.send(chunk, (err) => {
             if (err)
                 reject(err);
-            resolve();
+            if (!isAudio)
+                resolve();
+            const loop = setInterval(() => {
+                if (Date.now() - start >= 20) {
+                    clearInterval(loop);
+                    resolve();
+                }
+            }, 1);
         })
     })
 }
@@ -43,7 +51,7 @@ function create_tx_socket(connection) {
             for (const chunk of rawAudio) {
                 const header = create_header(seq, true);
                 const data = Buffer.concat([header, chunk]);
-                await send_data(socket, data);
+                await send_data(socket, data, true);
             }
             const endHeader = create_header(seq, false);
             await send_data(socket, endHeader);
