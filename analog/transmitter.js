@@ -24,7 +24,7 @@ function send_data(socket, chunk, isAudio) {
             if (!isAudio)
                 resolve();
             const loop = setInterval(() => {
-                if (Date.now() - start >= 20) {
+                if (Date.now() - start >= 25) {
                     clearInterval(loop);
                     resolve();
                 }
@@ -46,15 +46,13 @@ function create_tx_socket(connection) {
         rawAudio = converter.collapse_pcm_data(rawAudio);
         rawAudio = converter.split_buffer(rawAudio, 320);
         try {
-            const startHeader = create_header(seq, true);
-            await send_data(socket, startHeader);
             for (const chunk of rawAudio) {
                 const header = create_header(seq, true);
                 const data = Buffer.concat([header, chunk]);
                 await send_data(socket, data, true);
             }
-            const endHeader = create_header(seq, false);
-            await send_data(socket, endHeader);
+            //const endHeader = create_header(seq, false);
+            //await send_data(socket, endHeader);
         } catch {
             socket.close();
         }
