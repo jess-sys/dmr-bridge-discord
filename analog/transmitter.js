@@ -32,7 +32,7 @@ function create_tx_socket(connection) {
             .on("data", (chunk) => {
                 const header = create_header(seq, true);
                 seq += 1
-                const data = Buffer.concat(header, chunk);
+                const data = Buffer.concat([header, chunk]);
                 socket.send(data);
             })
             .on("end", () => {
