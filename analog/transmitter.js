@@ -7,8 +7,8 @@ const logger = require('../helpers/logger');
 function create_header(seq, transmit) {
     const header = Buffer.alloc(32);
     header.write("USRP", 0);
-    header.writeUInt16BE(seq, 4);
-    header.writeUInt16BE(Number(transmit), 12);
+    header.writeUInt32BE(seq, 4);
+    header.writeUInt32BE(Number(transmit), 12);
     return header;
 }
 
@@ -27,7 +27,12 @@ function create_tx_socket(connection) {
         rawAudio = converter.split_buffer(rawAudio, 320);
         const startHeader = create_header(seq, true);
         seq += 1;
-        socket.send(startHeader);
+        socket.send(startHeader, (err) => {
+            if (err) {
+                logger.error('TX', 'ERROR', err.name)
+                socket.close();
+            }
+        });
         stream.Readable.from(rawAudio)
             .on("data", (chunk) => {
                 const header = create_header(seq, true);
