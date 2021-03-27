@@ -29,7 +29,7 @@ function create_tx_socket(connection) {
     const socket = dgram.createSocket({ type: 'udp4' });
     let audioPackets = {};
     
-    setInterval(async () => {
+    async function send_audio() {
         let rawAudio = Object.values(audioPackets);
         if (rawAudio.length === 0)
             return;
@@ -69,6 +69,7 @@ function create_tx_socket(connection) {
                 if (user.id in audioPackets === false)
                     audioPackets[user.id] = []
                 audioPackets[user.id].push(newChunk);
+                send_audio();
             })
     })
 }
