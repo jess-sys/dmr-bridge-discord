@@ -48,7 +48,7 @@ function create_tx_socket(connection) {
         } catch {
             socket.close();
         }
-    }, 250);
+    }
 
     socket.connect(Number(process.env.DMR_TARGET_RX_PORT), process.env.DMR_TARGET);
 
