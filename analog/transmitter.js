@@ -33,12 +33,22 @@ function create_tx_socket(connection) {
                 const header = create_header(seq, true);
                 seq += 1
                 const data = Buffer.concat([header, chunk]);
-                socket.send(data);
+                socket.send(data, (err) => {
+                    if (err) {
+                        logger.error('TX', 'ERROR', err.name)
+                        socket.close();
+                    }
+                });
             })
             .on("end", () => {
                 const endHeader = create_header(seq, false);
                 seq += 1
-                socket.send(endHeader);
+                socket.send(endHeader, (err) => {
+                    if (err) {
+                        logger.error('TX', 'ERROR', err.name)
+                        socket.close();
+                    }
+                });
             })
     }, 250);
 
