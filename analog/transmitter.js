@@ -4,20 +4,32 @@ const dgram = require('dgram');
 const converter = require('./converter');
 const logger = require('../helpers/logger');
 
+let seq = 0;
+
 function create_header(seq, transmit) {
     const header = Buffer.alloc(32);
     header.write("USRP", 0);
     header.writeUInt32BE(seq, 4);
+    seq += 1;
     header.writeUInt32BE(Number(transmit), 12);
     return header;
+}
+
+function send_data(socket, chunk) {
+    return new Promise((resolve, reject) => {
+        socket.send(chunk, (err) => {
+            if (err)
+                reject(err);
+            resolve();
+        })
+    })
 }
 
 function create_tx_socket(connection) {
     const socket = dgram.createSocket({ type: 'udp4' });
     let audioPackets = {};
-    let seq = 0;
     
-    setInterval(() => {
+    setInterval(async () => {
         let rawAudio = Object.values(audioPackets);
         if (rawAudio.length === 0)
             return;
@@ -25,36 +37,19 @@ function create_tx_socket(connection) {
         rawAudio = rawAudio.map((chunks) => Buffer.concat(chunks));
         rawAudio = converter.collapse_pcm_data(rawAudio);
         rawAudio = converter.split_buffer(rawAudio, 320);
-        const startHeader = create_header(seq, true);
-        seq += 1;
-        socket.send(startHeader, (err) => {
-            if (err) {
-                logger.error('TX', 'ERROR', err.name)
-                socket.close();
-            }
-        });
-        stream.Readable.from(rawAudio)
-            .on("data", (chunk) => {
+        try {
+            const startHeader = create_header(seq, true);
+            await send_data(socket, startHeader);
+            for (const chunk of rawAudio) {
                 const header = create_header(seq, true);
-                seq += 1
                 const data = Buffer.concat([header, chunk]);
-                socket.send(data, (err) => {
-                    if (err) {
-                        logger.error('TX', 'ERROR', err.name)
-                        socket.close();
-                    }
-                });
-            })
-            .on("end", () => {
-                const endHeader = create_header(seq, false);
-                seq += 1
-                socket.send(endHeader, (err) => {
-                    if (err) {
-                        logger.error('TX', 'ERROR', err.name)
-                        socket.close();
-                    }
-                });
-            })
+                await send_data(socket, data);
+            }
+            const endHeader = create_header(seq, false);
+            await send_data(socket, endHeader);
+        } catch {
+            socket.close();
+        }
     }, 250);
 
     socket.connect(Number(process.env.DMR_TARGET_RX_PORT), process.env.DMR_TARGET);
