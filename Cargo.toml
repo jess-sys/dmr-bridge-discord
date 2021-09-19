@@ -1,0 +1,15 @@
+[package]
+name = "dmr-bridge-discord-rust"
+version = "0.1.0"
+authors = ["Alexandre Monier <alexandre.monierc@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cpal = "*"
+songbird = "*"
+serenity = { version = "*", features = ["client", "standard_framework", "voice", "rustls_backend" ]}
+tokio = { version = "*", features = ["macros", "rt-multi-thread"] }
+chrono = "*"
+dotenv = "*"
