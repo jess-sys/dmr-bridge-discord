@@ -13,3 +13,5 @@ serenity = { version = "*", features = ["client", "standard_framework", "voice",
 tokio = { version = "*", features = ["macros", "rt-multi-thread"] }
 chrono = "*"
 dotenv = "*"
+byteorder = "*"
+state = "*"

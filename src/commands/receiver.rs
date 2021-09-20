@@ -1,10 +1,16 @@
 use serenity::async_trait;
 
+use byteorder::{ByteOrder, BigEndian, LittleEndian};
+
+use state::Storage;
+
 use songbird::{
     Event,
     EventContext,
     EventHandler as VoiceEventHandler,
 };
+
+static SEQUENCE: Storage<u32> = Storage::new();
 
 pub struct Receiver;
 
@@ -12,6 +18,7 @@ impl Receiver {
     pub fn new() -> Self {
         // You can manage state here, such as a buffer of audio packet bytes so
         // you can later store them in intervals.
+        SEQUENCE.set(0);
         Self { }
     }
 }
@@ -25,14 +32,21 @@ impl VoiceEventHandler for Receiver {
                 // An event which fires for every received audio packet,
                 // containing the decoded data.
                 if let Some(audio) = data.audio {
-                    println!("Audio packet's first 5 samples: {:?}", audio.get(..5.min(audio.len())));
-                    println!(
-                        "Audio packet sequence {:05} has {:04} bytes (decompressed from {}), SSRC {}",
-                        data.packet.sequence.0,
-                        audio.len() * std::mem::size_of::<i16>(),
-                        data.packet.payload.len(),
-                        data.packet.ssrc,
-                    );
+                    let mut values = audio.into_iter().peekable();
+                    while values.peek().is_some() {
+                        let mut buffer = [0u8; 352];
+                        let audio_chunk: Vec<_> = values.by_ref().take(160).cloned().collect();
+                        buffer.copy_from_slice(b"USRP");
+                        BigEndian::write_u32(&mut buffer[4..8], SEQUENCE.get().clone());
+                        SEQUENCE.set(SEQUENCE.get() + 1);
+                        BigEndian::write_u32(&mut buffer[8..12], 1);
+                        LittleEndian::write_i16_into(audio_chunk.as_slice(), &mut buffer[32..]);
+                    }
+                    let mut end_buffer = [0u8; 32];
+                    end_buffer.copy_from_slice(b"USRP");
+                    BigEndian::write_u32(&mut end_buffer[4..8], SEQUENCE.get().clone());
+                    SEQUENCE.set(SEQUENCE.get() + 1);
+                    BigEndian::write_u32(&mut end_buffer[8..12], 0);
                 } else {
                     println!("RTP packet, but no audio. Driver may not be configured to decode.");
                 }

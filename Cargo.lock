@@ -441,11 +441,13 @@ dependencies = [
 name = "dmr-bridge-discord-rust"
 version = "0.1.0"
 dependencies = [
+ "byteorder",
  "chrono",
  "cpal",
  "dotenv",
  "serenity",
  "songbird",
+ "state",
  "tokio",
 ]
 
@@ -613,6 +615,19 @@ name = "generator"
 version = "0.6.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "061d3be1afec479d56fa3bd182bf966c7999ec175fcfdb87ac14d417241366c6"
+dependencies = [
+ "cc",
+ "libc",
+ "log",
+ "rustversion",
+ "winapi",
+]
+
+[[package]]
+name = "generator"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1d9279ca822891c1a4dae06d185612cf8fc6acfe5dff37781b41297811b12ee"
 dependencies = [
  "cc",
  "libc",
@@ -925,7 +940,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0e8460f2f2121162705187214720353c517b97bdfb3494c0b1e33d83ebe4bed"
 dependencies = [
  "cfg-if 0.1.10",
- "generator",
+ "generator 0.6.25",
+ "scoped-tls",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "loom"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2111607c723d7857e0d8299d5ce7a0bf4b844d3e44f8de136b13da513eaf8fc4"
+dependencies = [
+ "cfg-if 1.0.0",
+ "generator 0.7.0",
  "scoped-tls",
  "serde",
  "serde_json",
@@ -1826,6 +1854,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "state"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "87cf4f5369e6d3044b5e365c9690f451516ac8f0954084622b49ea3fde2f6de5"
+dependencies = [
+ "loom 0.5.1",
+]
+
+[[package]]
 name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1845,7 +1882,7 @@ checksum = "9501b1be04455a53f782940f7ca17050482de0a6e322c1ff606afc0ebbc62674"
 dependencies = [
  "crossbeam-utils",
  "futures-util",
- "loom",
+ "loom 0.3.6",
 ]
 
 [[package]]
