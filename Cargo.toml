@@ -14,4 +14,3 @@ tokio = { version = "*", features = ["macros", "rt-multi-thread"] }
 chrono = "*"
 dotenv = "*"
 byteorder = "*"
-state = "*"

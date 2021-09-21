@@ -2,7 +2,9 @@ use serenity::async_trait;
 
 use byteorder::{ByteOrder, BigEndian, LittleEndian};
 
-use state::Storage;
+use std::sync::RwLock;
+use std::env;
+use std::net::UdpSocket;
 
 use songbird::{
     Event,
@@ -10,16 +12,38 @@ use songbird::{
     EventHandler as VoiceEventHandler,
 };
 
-static SEQUENCE: Storage<u32> = Storage::new();
-
-pub struct Receiver;
+pub struct Receiver {
+    sequence: RwLock<u32>,
+    socket: UdpSocket
+}
 
 impl Receiver {
     pub fn new() -> Self {
         // You can manage state here, such as a buffer of audio packet bytes so
         // you can later store them in intervals.
-        SEQUENCE.set(0);
-        Self { }
+        let socket = UdpSocket::bind("127.0.0.1:0")
+            .expect("Couldn't bind udp socket for discord's audio receiver");
+        socket.connect(env::var("DMR_TARGET_RX_ADDR")
+                .expect("Expected a target rx address in the environment"))
+            .expect("Couldn't connect to DMR's audio transmitter");
+
+        Self { 
+            sequence: RwLock::new(0),
+            socket: socket
+        }
+    }
+
+    pub fn write_header(&self, buffer: &mut [u8], transmit: bool) {
+        buffer[..4].copy_from_slice(b"USRP");
+        {
+            let sequence_read = self.sequence.read().unwrap();
+            BigEndian::write_u32(&mut buffer[4..8], *sequence_read);
+        }
+        {
+            let mut sequence_write = self.sequence.write().unwrap();
+            *sequence_write += 1;
+        }
+        BigEndian::write_u32(&mut buffer[8..12], transmit as u32);
     }
 }
 
@@ -35,18 +59,14 @@ impl VoiceEventHandler for Receiver {
                     let mut values = audio.into_iter().peekable();
                     while values.peek().is_some() {
                         let mut buffer = [0u8; 352];
-                        let audio_chunk: Vec<_> = values.by_ref().take(160).cloned().collect();
-                        buffer.copy_from_slice(b"USRP");
-                        BigEndian::write_u32(&mut buffer[4..8], SEQUENCE.get().clone());
-                        SEQUENCE.set(SEQUENCE.get() + 1);
-                        BigEndian::write_u32(&mut buffer[8..12], 1);
+                        let audio_chunk: Vec<i16> = values.by_ref().take(160).cloned().collect();
+                        self.write_header(&mut buffer, true);
                         LittleEndian::write_i16_into(audio_chunk.as_slice(), &mut buffer[32..]);
+                        self.socket.send(&buffer).expect("Couldn't send discord's audio packet through DMR transmitter");
                     }
                     let mut end_buffer = [0u8; 32];
-                    end_buffer.copy_from_slice(b"USRP");
-                    BigEndian::write_u32(&mut end_buffer[4..8], SEQUENCE.get().clone());
-                    SEQUENCE.set(SEQUENCE.get() + 1);
-                    BigEndian::write_u32(&mut end_buffer[8..12], 0);
+                    self.write_header(&mut end_buffer, false);
+                    self.socket.send(&end_buffer).expect("Couldn't send discord's audio packet through DMR transmitter");
                 } else {
                     println!("RTP packet, but no audio. Driver may not be configured to decode.");
                 }

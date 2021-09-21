@@ -35,7 +35,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
     let channel = match channel_id {
         Some(channel) => channel,
         None => {
-            check_msg(msg.reply(ctx, "Not in a voice channel").await);
+            check_msg(msg.reply(ctx, "⚠️ Not in a voice channel").await);
 
             return Ok(())
         }
@@ -69,6 +69,10 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
     let guild = msg.guild(&ctx.cache).await.unwrap();
     let guild_id = guild.id;
 
+    let channel_id = guild
+        .voice_states.get(&msg.author.id)
+        .and_then(|voice_state| voice_state.channel_id);
+
     let manager = songbird::get(ctx).await
         .expect("Songbird Voice client placed in at initialisation.").clone();
     let has_handler = manager.get(guild_id).is_some();
@@ -78,9 +82,9 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
             check_msg(msg.reply(ctx, format!("Failed: {:?}", e)).await);
         }
 
-        check_msg(msg.reply(ctx,"Left voice channel").await);
+        check_msg(msg.reply(ctx, &format!("Left {}", channel_id.unwrap().mention())).await);
     } else {
-        check_msg(msg.reply(ctx, "Not in a voice channel").await);
+        check_msg(msg.reply(ctx, "⚠️ Not in a voice channel").await);
     }
 
     Ok(())

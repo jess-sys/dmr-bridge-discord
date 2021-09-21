@@ -23,12 +23,13 @@ use handler::Handler;
 async fn main() {
     dotenv().ok();
 
-    let token = env::var("TOKEN")
+    let token = env::var("BOT_TOKEN")
         .expect("Expected a token in the environment");
 
     let framework = StandardFramework::new()
         .configure(|c| c
-            .prefix("~"))
+            .prefix(env::var("BOT_PREFIX")
+                .expect("Expected a prefix in the environment").as_str()))
         .group(&commands::GENERAL_GROUP);
 
     let songbird_config = Config::default()
