@@ -2,7 +2,8 @@ use serenity::{
     client::Client,
     framework::{
         StandardFramework,
-    }
+    },
+    prelude::Mutex
 };
 
 use songbird::{
@@ -12,11 +13,15 @@ use songbird::{
 };
 
 use dotenv::dotenv;
-use std::env;
+use std::{
+    env,
+    sync::Arc
+};
 
 mod handler;
 mod commands;
 
+use commands::transmitter::Transmitter;
 use handler::Handler;
 
 #[tokio::main]
@@ -41,6 +46,11 @@ async fn main() {
         .register_songbird_from_config(songbird_config)
         .await
         .expect("Error creating client");
+
+    {
+        let mut data = client.data.write().await;
+        data.insert::<commands::DMRContext>(Arc::new(Mutex::new(Transmitter::new())));
+    }
 
     let _ = client.start().await.map_err(|why| println!("Client ended: {:?}", why));
 }

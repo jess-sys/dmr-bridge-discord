@@ -9,14 +9,25 @@ use serenity::{
         misc::Mentionable
     },
     Result as SerenityResult,
+    prelude::{TypeMapKey, Mutex}
 };
 
 use songbird::CoreEvent;
 
+use std::sync::Arc;
+
 mod receiver;
+pub mod transmitter;
 
 use chrono::prelude::Utc;
 use receiver::Receiver;
+use transmitter::Transmitter;
+
+pub struct DMRContext;
+
+impl TypeMapKey for DMRContext {
+    type Value = Arc<Mutex<Transmitter>>;
+}
 
 #[group]
 #[commands(join, leave, ping)]
@@ -55,6 +66,16 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
             Receiver::new(),
         );
 
+        let transmitter_lock = {
+            let data_read = ctx.data.read().await;
+            data_read.get::<DMRContext>().expect("Expected DMRContext in TypeMap.").clone()
+        };
+
+        {
+            let mut transmitter = transmitter_lock.lock().await;
+            transmitter.add(format!("{}-{}", guild_id, channel), handler_lock);
+        }
+
         check_msg(msg.reply(ctx, &format!("Joined {}", channel.mention())).await);
     } else {
         check_msg(msg.reply(ctx, "Error joining the channel").await);
@@ -71,18 +92,28 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
 
     let channel_id = guild
         .voice_states.get(&msg.author.id)
-        .and_then(|voice_state| voice_state.channel_id);
+        .and_then(|voice_state| voice_state.channel_id)
+        .unwrap();
 
     let manager = songbird::get(ctx).await
         .expect("Songbird Voice client placed in at initialisation.").clone();
     let has_handler = manager.get(guild_id).is_some();
 
     if has_handler {
+        let transmitter_lock = {
+            let data_read = ctx.data.read().await;
+            data_read.get::<DMRContext>().expect("Expected DMRContext in TypeMap.").clone()
+        };
+
+        {
+            let mut transmitter = transmitter_lock.lock().await;
+            transmitter.sub(format!("{}-{}", guild_id, channel_id));
+        }
+
         if let Err(e) = manager.remove(guild_id).await {
             check_msg(msg.reply(ctx, format!("Failed: {:?}", e)).await);
         }
-
-        check_msg(msg.reply(ctx, &format!("Left {}", channel_id.unwrap().mention())).await);
+        check_msg(msg.reply(ctx, &format!("Left {}", channel_id.mention())).await);
     } else {
         check_msg(msg.reply(ctx, "⚠️ Not in a voice channel").await);
     }

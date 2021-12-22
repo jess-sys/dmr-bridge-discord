@@ -2,7 +2,7 @@ use serenity::async_trait;
 
 use byteorder::{ByteOrder, BigEndian, LittleEndian};
 
-use std::sync::RwLock;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::env;
 use std::net::UdpSocket;
 
@@ -13,7 +13,7 @@ use songbird::{
 };
 
 pub struct Receiver {
-    sequence: RwLock<u32>,
+    sequence: AtomicU32,
     socket: UdpSocket
 }
 
@@ -28,21 +28,16 @@ impl Receiver {
             .expect("Couldn't connect to DMR's audio transmitter");
 
         Self { 
-            sequence: RwLock::new(0),
+            sequence: AtomicU32::new(0),
             socket: socket
         }
     }
 
     pub fn write_header(&self, buffer: &mut [u8], transmit: bool) {
         buffer[..4].copy_from_slice(b"USRP");
-        {
-            let sequence_read = self.sequence.read().unwrap();
-            BigEndian::write_u32(&mut buffer[4..8], *sequence_read);
-        }
-        {
-            let mut sequence_write = self.sequence.write().unwrap();
-            *sequence_write += 1;
-        }
+        let sequence = self.sequence.load(Ordering::Relaxed);
+        BigEndian::write_u32(&mut buffer[4..8], sequence);
+        self.sequence.fetch_add(1, Ordering::SeqCst);
         BigEndian::write_u32(&mut buffer[8..12], transmit as u32);
     }
 }
