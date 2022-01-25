@@ -73,7 +73,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
 
         {
             let mut transmitter = transmitter_lock.lock().await;
-            transmitter.add(format!("{}-{}", guild_id, channel), handler_lock);
+            transmitter.set( handler_lock);
         }
 
         check_msg(msg.reply(ctx, &format!("Joined {}", channel.mention())).await);
@@ -107,7 +107,7 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
 
         {
             let mut transmitter = transmitter_lock.lock().await;
-            transmitter.sub(format!("{}-{}", guild_id, channel_id));
+            transmitter.unset();
         }
 
         if let Err(e) = manager.remove(guild_id).await {

@@ -29,7 +29,7 @@ impl Receiver {
 
         Self { 
             sequence: AtomicU32::new(0),
-            socket: socket
+            socket
         }
     }
 

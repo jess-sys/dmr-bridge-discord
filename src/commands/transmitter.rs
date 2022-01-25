@@ -1,30 +1,29 @@
 use std::env;
-use std::sync::{Arc, Mutex, mpsc::{self, Sender, Receiver}};
+use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}, mpsc::{sync_channel, SyncSender, Receiver}};
 use serenity::prelude::Mutex as SerenityMutex;
-use songbird::Call;
-use std::collections::HashMap;
+use songbird::{Call, tracks::create_player, input::Input};
 use std::thread;
-use tokio::task::JoinHandle;
-use tokio::net::UdpSocket as UdpSocketAsync;
 use std::net::UdpSocket;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::thread::JoinHandle;
 
-
-use byteorder::{ByteOrder, BigEndian, LittleEndian};
+use songbird::input::{Codec, Container, Reader};
+use tokio::runtime::Runtime;
 
 pub struct Transmitter {
-    socket: UdpSocketAsync,
-    channels: Mutex<HashMap<String, Arc<SerenityMutex<Call>>>>,
-    update: AtomicBool,
-    sender: Sender<>,
-    receiver: Receiver<>
+    socket: Arc<UdpSocket>,
+    discord_channel: Mutex<Option<Arc<SerenityMutex<Call>>>>,
+    sender: Option<JoinHandle<()>>,
+    receiver: Option<JoinHandle<()>>,
+    close_sender: Arc<AtomicBool>,
+    close_receiver: Arc<AtomicBool>,
+    tx: SyncSender<Vec<u8>>,
+    rx: Arc<Receiver<Vec<u8>>>
 }
 
-async fn runTransmitter(transmitter: Arc<&mut Transmitter>) {
-    let mut buffer = [0u8; 352];
-
-    loop {
-        socket.recv(&mut buffer).await;
+impl Drop for Transmitter {
+    fn drop(&mut self) {
+        self.stop_sender();
+        self.unset();
     }
 }
 
@@ -32,49 +31,140 @@ impl Transmitter {
     pub fn new() -> Self {
         // You can manage state here, such as a buffer of audio packet bytes so
         // you can later store them in intervals.
+        let (tx, rx) = sync_channel(4);
+
+        let dmr_target_tx_addr = env::var("DMR_TARGET_TX_ADDR")
+            .expect("Expected a target tx address in the environment");
+
         let socket = UdpSocket::bind("127.0.0.1:0")
             .expect("Couldn't bind udp socket for discord's audio transmitter");
-        socket.connect(env::var("DMR_TARGET_TX_ADDR")
-                .expect("Expected a target tx address in the environment"))
+
+        socket.connect(dmr_target_tx_addr)
             .expect("Couldn't connect to DMR's audio receiver");
-        let async_socket = UdpSocketAsync::from_std(socket)
-            .expect("Failed to convert udp socket for discord's audio transmitter to async socket");
-        let process = tokio::spawn(async {});
-        process.abort();
-        thread::spawn()
 
-        Self { 
-            socket: async_socket,
-            channels: Mutex::new(HashMap::new()),
-            update: AtomicBool::new(false),
-            process: process
+        Self {
+            socket: Arc::new(socket),
+            discord_channel: Mutex::new(None),
+            sender: None,
+            receiver: None,
+            close_sender: Arc::new(AtomicBool::new(false)),
+            close_receiver: Arc::new(AtomicBool::new(false)),
+            tx,
+            rx: Arc::new(rx)
         }
     }
 
-    fn kill(&mut self) {
-        self.process.abort();
+    pub fn start_sender(&mut self) {
+        let socket = self.socket.clone();
+        let tx = self.tx.clone();
+        let close = self.close_sender.clone();
+        let sender = thread::spawn(move || {
+
+            loop {
+                let mut buffer = [0u8; 352];
+
+                if close.load(Ordering::Relaxed) {
+                    return;
+                }
+                match socket.recv(&mut buffer) {
+                    Ok(n) => match tx.send(Vec::from(&buffer[32..])) {
+                        Err(_) => {
+                            return;
+                        }
+                        _ => {}
+                    },
+                    Err(_) => {
+                        return;
+                    }
+                }
+            }
+        });
     }
 
-    pub fn add(&mut self, id: String, device: Arc<SerenityMutex<Call>>) {
-        let channels = self.channels.lock().await();
-        channels.insert(id, device);
-        self.update.store(true, Ordering::Relaxed);
-        if channels.len() == 1 {
-            let transmitter = Arc::new(self);
-            let channels = Arc::new(self.channels);
-            let update = Arc::new(self.update);
-            self.process = tokio::spawn(async move {
-                runTransmitter(transmitter.clone());
-            });
+    pub fn stop_sender(&mut self) {
+        if self.sender.is_some() {
+            let sender = self.sender.unwrap();
+            self.close_sender.swap(true, Ordering::Relaxed);
+            sender.join().unwrap();
         }
     }
 
-    pub fn sub(&mut self, id: String) {
-        let channels = self.channels.lock().unwrap();
-        channels.remove(&id);
-        self.update.store(true, Ordering::Relaxed);
-        if channels.len() == 0 {
-            self.kill();
+    pub fn start_receiver(&mut self) {
+        let discord_channel = self.discord_channel.lock().unwrap().clone();
+        let close = self.close_receiver.clone();
+        let rx = self.rx.clone();
+        self.receiver = Some(thread::spawn(move || {
+            loop {
+                if close.load(Ordering::Relaxed) {
+                    return;
+                }
+                match rx.recv() {
+                    Ok(packet) => {
+                        let (mut audio, _audio_handle) = create_player(Input::new(
+                            false,
+                            Reader::from_memory(packet),
+                            Codec::Pcm,
+                            Container::Raw,
+                            None));
+                        match discord_channel.clone() {
+                            Some(device) => {
+                                let mut rt = Runtime::new().unwrap();
+                                let mut call = rt.block_on(async {
+                                    device.lock().await
+                                });
+                                call.play_only(audio);
+                            },
+                            None => {}
+                        }
+                    }
+                    Err(_) => {
+                        return;
+                    }
+                }
+            }
+        }));
+    }
+
+    pub fn stop_receiver(&mut self) {
+        if self.receiver.is_some() {
+            let receiver = self.receiver.unwrap();
+            self.close_receiver.swap(true, Ordering::Relaxed);
+            receiver.join().unwrap();
+        }
+    }
+
+    pub fn set(&mut self, device: Arc<SerenityMutex<Call>>) {
+        let device = Arc::clone(&device);
+        let discord_channel = self.discord_channel.lock().unwrap();
+
+        match discord_channel.clone() {
+            Some(old_device) => {
+                let mut rt = Runtime::new().unwrap();
+                let mut old_call = rt.block_on(async {
+                    old_device.lock().await
+                });
+                old_call.leave();
+            },
+            None => {},
+        }
+        *discord_channel = Some(device);
+        self.start_receiver();
+    }
+
+    pub fn unset(&mut self) {
+        let discord_channel = self.discord_channel.lock().unwrap();
+
+        match discord_channel.clone() {
+            Some(old_device) => {
+                let mut rt = Runtime::new().unwrap();
+                let mut old_call = rt.block_on(async {
+                    old_device.lock().await
+                });
+                old_call.leave();
+                *discord_channel = None;
+                self.stop_receiver();
+            },
+            None => {},
         }
     }
 }
