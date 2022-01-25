@@ -73,7 +73,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
 
         {
             let mut transmitter = transmitter_lock.lock().await;
-            transmitter.set( handler_lock);
+            transmitter.set( handler_lock.clone());
         }
 
         check_msg(msg.reply(ctx, &format!("Joined {}", channel.mention())).await);

@@ -1,5 +1,5 @@
 use std::env;
-use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}, mpsc::{sync_channel, SyncSender, Receiver}};
+use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}, mpsc::{sync_channel, SyncSender}};
 use serenity::prelude::Mutex as SerenityMutex;
 use songbird::{Call, tracks::create_player, input::Input};
 use std::thread;
@@ -10,19 +10,16 @@ use songbird::input::{Codec, Container, Reader};
 use tokio::runtime::Runtime;
 
 pub struct Transmitter {
-    socket: Arc<UdpSocket>,
     discord_channel: Mutex<Option<Arc<SerenityMutex<Call>>>>,
-    sender: Option<JoinHandle<()>>,
-    receiver: Option<JoinHandle<()>>,
+    sender: Mutex<Option<Arc<JoinHandle<()>>>>,
+    receiver: Mutex<Option<Arc<JoinHandle<()>>>>,
     close_sender: Arc<AtomicBool>,
     close_receiver: Arc<AtomicBool>,
-    tx: SyncSender<Vec<u8>>,
-    rx: Arc<Receiver<Vec<u8>>>
+    tx: Option<SyncSender<Vec<u8>>>,
 }
 
 impl Drop for Transmitter {
     fn drop(&mut self) {
-        self.stop_sender();
         self.unset();
     }
 }
@@ -31,8 +28,32 @@ impl Transmitter {
     pub fn new() -> Self {
         // You can manage state here, such as a buffer of audio packet bytes so
         // you can later store them in intervals.
-        let (tx, rx) = sync_channel(4);
 
+        Self {
+            discord_channel: Mutex::new(None),
+            sender: Mutex::new(None),
+            receiver: Mutex::new(None),
+            close_sender: Arc::new(AtomicBool::new(false)),
+            close_receiver: Arc::new(AtomicBool::new(false)),
+            tx: None
+        }
+    }
+
+    pub fn start(&mut self) {
+        self.close_receiver.swap(false, Ordering::Relaxed);
+        self.close_sender.swap(false, Ordering::Relaxed);
+        self.start_receiver();
+        self.start_sender();
+    }
+
+    pub fn stop(&mut self) {
+        self.close_receiver.swap(true, Ordering::Relaxed);
+        self.close_sender.swap(true, Ordering::Relaxed);
+        self.stop_sender();
+        self.stop_receiver();
+    }
+
+    pub fn start_sender(&mut self) {
         let dmr_target_tx_addr = env::var("DMR_TARGET_TX_ADDR")
             .expect("Expected a target tx address in the environment");
 
@@ -42,65 +63,58 @@ impl Transmitter {
         socket.connect(dmr_target_tx_addr)
             .expect("Couldn't connect to DMR's audio receiver");
 
-        Self {
-            socket: Arc::new(socket),
-            discord_channel: Mutex::new(None),
-            sender: None,
-            receiver: None,
-            close_sender: Arc::new(AtomicBool::new(false)),
-            close_receiver: Arc::new(AtomicBool::new(false)),
-            tx,
-            rx: Arc::new(rx)
-        }
-    }
+        if self.tx.is_some() {
+            let tx = self.tx.clone().unwrap();
+            let close = self.close_sender.clone();
+            let mut sender = self.sender.lock().unwrap();
+            *sender = Some(Arc::new(thread::spawn(move || {
 
-    pub fn start_sender(&mut self) {
-        let socket = self.socket.clone();
-        let tx = self.tx.clone();
-        let close = self.close_sender.clone();
-        let sender = thread::spawn(move || {
+                loop {
+                    let mut buffer = [0u8; 352];
 
-            loop {
-                let mut buffer = [0u8; 352];
-
-                if close.load(Ordering::Relaxed) {
-                    return;
-                }
-                match socket.recv(&mut buffer) {
-                    Ok(n) => match tx.send(Vec::from(&buffer[32..])) {
+                    if close.load(Ordering::Relaxed) {
+                        close.swap(false, Ordering::Relaxed);
+                        return;
+                    }
+                    match socket.recv(&mut buffer) {
+                        Ok(_n) => match tx.send(Vec::from(&buffer[32..])) {
+                            Err(_) => {
+                                return;
+                            }
+                            _ => {}
+                        },
                         Err(_) => {
                             return;
                         }
-                        _ => {}
-                    },
-                    Err(_) => {
-                        return;
                     }
                 }
-            }
-        });
+            })));
+        }
     }
 
     pub fn stop_sender(&mut self) {
-        if self.sender.is_some() {
-            let sender = self.sender.unwrap();
+        let sender = self.sender.lock().unwrap();
+        if sender.is_some() {
             self.close_sender.swap(true, Ordering::Relaxed);
-            sender.join().unwrap();
         }
     }
 
     pub fn start_receiver(&mut self) {
         let discord_channel = self.discord_channel.lock().unwrap().clone();
         let close = self.close_receiver.clone();
-        let rx = self.rx.clone();
-        self.receiver = Some(thread::spawn(move || {
+        let (tx, rx) = sync_channel(4);
+        self.tx = Some(tx);
+        let mut receiver = self.receiver.lock().unwrap();
+
+        *receiver = Some(Arc::new(thread::spawn(move || {
             loop {
                 if close.load(Ordering::Relaxed) {
+                    close.swap(false, Ordering::Relaxed);
                     return;
                 }
                 match rx.recv() {
                     Ok(packet) => {
-                        let (mut audio, _audio_handle) = create_player(Input::new(
+                        let (audio, _audio_handle) = create_player(Input::new(
                             false,
                             Reader::from_memory(packet),
                             Codec::Pcm,
@@ -108,7 +122,7 @@ impl Transmitter {
                             None));
                         match discord_channel.clone() {
                             Some(device) => {
-                                let mut rt = Runtime::new().unwrap();
+                                let rt = Runtime::new().unwrap();
                                 let mut call = rt.block_on(async {
                                     device.lock().await
                                 });
@@ -122,49 +136,31 @@ impl Transmitter {
                     }
                 }
             }
-        }));
+        })));
     }
 
     pub fn stop_receiver(&mut self) {
-        if self.receiver.is_some() {
-            let receiver = self.receiver.unwrap();
+        let receiver = self.receiver.lock().unwrap();
+        if receiver.is_some() {
             self.close_receiver.swap(true, Ordering::Relaxed);
-            receiver.join().unwrap();
         }
     }
 
     pub fn set(&mut self, device: Arc<SerenityMutex<Call>>) {
+        self.stop();
         let device = Arc::clone(&device);
-        let discord_channel = self.discord_channel.lock().unwrap();
-
-        match discord_channel.clone() {
-            Some(old_device) => {
-                let mut rt = Runtime::new().unwrap();
-                let mut old_call = rt.block_on(async {
-                    old_device.lock().await
-                });
-                old_call.leave();
-            },
-            None => {},
+        {
+            let mut discord_channel = self.discord_channel.lock().unwrap();
+            *discord_channel = Some(device);
         }
-        *discord_channel = Some(device);
-        self.start_receiver();
+        self.start();
     }
 
     pub fn unset(&mut self) {
-        let discord_channel = self.discord_channel.lock().unwrap();
-
-        match discord_channel.clone() {
-            Some(old_device) => {
-                let mut rt = Runtime::new().unwrap();
-                let mut old_call = rt.block_on(async {
-                    old_device.lock().await
-                });
-                old_call.leave();
-                *discord_channel = None;
-                self.stop_receiver();
-            },
-            None => {},
+        self.stop();
+        {
+            let mut discord_channel = self.discord_channel.lock().unwrap();
+            *discord_channel = None;
         }
     }
 }
