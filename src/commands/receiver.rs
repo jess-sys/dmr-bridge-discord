@@ -58,7 +58,9 @@ impl Receiver {
                     Ok((packet_type, packet)) => {
                         if packet_type == USRPVoicePacketType::START {
                             can_transmit = true;
+                            println!("NOW TRUE, CAN TRANSMIT: {}", can_transmit);
                         }
+                        println!("CAN TRANSMIT: {}", can_transmit);
                         if can_transmit == true {
                             println!("[INFO] SEND PACKET: {:?} (length: {}, ptt: {})", packet_type, packet.len(), BigEndian::read_u32(&packet[12..16]));
                             match socket.send(&*packet) {
@@ -73,6 +75,7 @@ impl Receiver {
                         }
                         if packet_type == USRPVoicePacketType::END {
                             can_transmit = false;
+                            println!("NOW FALSE, CAN TRANSMIT: {}", can_transmit);
                         }
                     },
                     Err(_) => {
