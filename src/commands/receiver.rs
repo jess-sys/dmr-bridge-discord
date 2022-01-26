@@ -15,7 +15,7 @@ use songbird::{
 };
 
 #[derive(PartialEq, Debug)]
-pub enum PacketType {
+pub enum USRPVoicePacketType {
     START,
     AUDIO,
     END
@@ -24,7 +24,7 @@ pub enum PacketType {
 pub struct Receiver {
     sequence: AtomicU32,
     close_receiver: Arc<AtomicBool>,
-    tx: SyncSender<(PacketType, Vec<u8>)>
+    tx: SyncSender<(USRPVoicePacketType, Vec<u8>)>
 }
 
 impl Drop for Receiver {
@@ -43,7 +43,7 @@ impl Receiver {
                 .expect("Expected a target rx address in the environment"))
             .expect("Couldn't connect to DMR's audio transmitter");
 
-        let (tx, rx) = sync_channel::<(PacketType, Vec<u8>)>(128);
+        let (tx, rx) = sync_channel::<(USRPVoicePacketType, Vec<u8>)>(128);
         let close_receiver = Arc::new(AtomicBool::new(false));
 
         let close = close_receiver.clone();
@@ -56,11 +56,12 @@ impl Receiver {
                 }
                 match rx.recv() {
                     Ok((packet_type, packet)) => {
-                        if packet_type == PacketType::START {
+                        println!("[INFO] FILTERING PACKET: {:?} (length: {}, ptt: {})", packet_type, packet.len(), BigEndian::read_u32(&packet[12..16]));
+                        if packet_type == USRPVoicePacketType::START {
                             can_transmit = true;
                         }
                         if can_transmit {
-                            println!("[INFO] SEND PACKET: {:?} (length: {})", packet_type, packet.len());
+                            println!("[INFO] SEND PACKET: {:?} (length: {}, ptt: {})", packet_type, packet.len(), BigEndian::read_u32(&packet[12..16]));
                             match socket.send(&*packet) {
                                 Err(_) => {
                                     close.swap(false, Ordering::Relaxed);
@@ -69,7 +70,7 @@ impl Receiver {
                                 _ => {}
                             }
                         }
-                        if packet_type == PacketType::END {
+                        if packet_type == USRPVoicePacketType::END {
                             can_transmit = false;
                         }
                     },
@@ -115,12 +116,12 @@ impl VoiceEventHandler for Receiver {
                     BigEndian::write_u32(&mut start_buffer[40..44], 7);
                     start_buffer[44] = 2;
                     start_buffer[46..53].copy_from_slice(b"2081337");
-                    self.tx.send((PacketType::START, Vec::from(start_buffer)))
+                    self.tx.send((USRPVoicePacketType::START, Vec::from(start_buffer)))
                         .expect("Couldn't send discord's audio packet through DMR transmitter");
                 } else {
                     let mut end_buffer = [0u8; 32];
                     self.write_header(&mut end_buffer, false, 0);
-                    self.tx.send((PacketType::END, Vec::from(end_buffer)))
+                    self.tx.send((USRPVoicePacketType::END, Vec::from(end_buffer)))
                         .expect("Couldn't send discord's audio packet through DMR transmitter");
                 }
             }
@@ -136,7 +137,7 @@ impl VoiceEventHandler for Receiver {
                         let mut packet_buffer = [0u8; 352];
                         self.write_header(&mut packet_buffer, true, 0);
                         LittleEndian::write_i16_into(audio_chunk.as_slice(), &mut packet_buffer[32..]);
-                        self.tx.send((PacketType::AUDIO, Vec::from(packet_buffer)))
+                        self.tx.send((USRPVoicePacketType::AUDIO, Vec::from(packet_buffer)))
                             .expect("Couldn't send discord's audio packet through DMR transmitter");
                     }
                 } else {
