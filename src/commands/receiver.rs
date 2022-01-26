@@ -56,11 +56,10 @@ impl Receiver {
                 }
                 match rx.recv() {
                     Ok((packet_type, packet)) => {
-                        println!("[INFO] FILTERING PACKET: {:?} (length: {}, ptt: {})", packet_type, packet.len(), BigEndian::read_u32(&packet[12..16]));
                         if packet_type == USRPVoicePacketType::START {
                             can_transmit = true;
                         }
-                        if can_transmit {
+                        if can_transmit == true {
                             println!("[INFO] SEND PACKET: {:?} (length: {}, ptt: {})", packet_type, packet.len(), BigEndian::read_u32(&packet[12..16]));
                             match socket.send(&*packet) {
                                 Err(_) => {
@@ -69,6 +68,8 @@ impl Receiver {
                                 }
                                 _ => {}
                             }
+                        } else {
+                            println!("[INFO] SKIPPED PACKET: {:?} (length: {}, ptt: {})", packet_type, packet.len(), BigEndian::read_u32(&packet[12..16]));
                         }
                         if packet_type == USRPVoicePacketType::END {
                             can_transmit = false;
@@ -111,7 +112,7 @@ impl VoiceEventHandler for Receiver {
             Ctx::SpeakingUpdate(data) => {
                 if data.speaking {
                     let mut start_buffer = [0u8; 64];
-                    self.write_header(&mut start_buffer, false, 2);
+                    self.write_header(&mut start_buffer, true, 2);
                     start_buffer[32] = 8;
                     BigEndian::write_u32(&mut start_buffer[40..44], 7);
                     start_buffer[44] = 2;
