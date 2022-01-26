@@ -14,7 +14,7 @@ use songbird::{
     EventHandler as VoiceEventHandler,
 };
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum PacketType {
     START,
     AUDIO,
@@ -58,10 +58,9 @@ impl Receiver {
                     Ok((packet_type, packet)) => {
                         if packet_type == PacketType::START {
                             can_transmit = true;
-                        } else if packet_type == PacketType::END {
-                            can_transmit = false;
                         }
                         if can_transmit {
+                            println!("[INFO] SEND PACKET: {:?} (length: {})", packet_type, packet.len());
                             match socket.send(&*packet) {
                                 Err(_) => {
                                     close.swap(false, Ordering::Relaxed);
@@ -69,6 +68,9 @@ impl Receiver {
                                 }
                                 _ => {}
                             }
+                        }
+                        if packet_type == PacketType::END {
+                            can_transmit = false;
                         }
                     },
                     Err(_) => {
