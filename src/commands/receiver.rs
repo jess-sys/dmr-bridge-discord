@@ -49,6 +49,7 @@ impl Receiver {
         let close = close_receiver.clone();
         thread::spawn(move || {
             let mut can_transmit = false;
+            println!("ONLY ONE TIME");
             loop {
                 if close.load(Ordering::Relaxed) {
                     close.swap(false, Ordering::Relaxed);
