@@ -66,6 +66,12 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
             Receiver::new(),
         );
 
+        handler.add_global_event(
+            CoreEvent::SpeakingUpdate.into(),
+            Receiver::new(),
+        );
+
+
         let transmitter_lock = {
             let data_read = ctx.data.read().await;
             data_read.get::<DMRContext>().expect("Expected DMRContext in TypeMap.").clone()
