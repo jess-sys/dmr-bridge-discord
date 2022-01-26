@@ -58,11 +58,12 @@ impl VoiceEventHandler for Receiver {
                 // An event which fires for every received audio packet,
                 // containing the decoded data.
                 if let Some(audio) = data.audio {
-                    println!("{:?}", audio.len());
-                    let mut values = audio.into_iter().peekable();
-                    while values.peek().is_some() {
+                    if audio.len() == 1920 {
+                        let mut audio_chunk = Vec::with_capacity(160);
+                        for i in 0..160 {
+                            audio_chunk.push(audio[i * 12]);
+                        }
                         let mut buffer = [0u8; 352];
-                        let audio_chunk: Vec<i16> = values.by_ref().take(160).cloned().collect();
                         self.write_header(&mut buffer, true);
                         LittleEndian::write_i16_into(audio_chunk.as_slice(), &mut buffer[32..]);
                         self.socket.send(&buffer).expect("Couldn't send discord's audio packet through DMR transmitter");
