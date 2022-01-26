@@ -7,12 +7,10 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cpal = { version = "*", features = ["jack"] }
-songbird = "*"
-serenity = { version = "*", features = ["client", "standard_framework", "voice", "rustls_backend" ]}
-tokio = { version = "*", features = ["macros", "rt-multi-thread"] }
-chrono = "*"
-dotenv = "*"
-byteorder = "*"
-lazy_static = "*"
-audiosocket = "*"
+cpal = { version = "0.13.4", features = ["jack"] }
+songbird = "0.2.0"
+serenity = { version = "0.10.9", features = [ "voice" ]}
+tokio = { version = "1.13.1", features = ["full"] }
+chrono = "0.4.19"
+dotenv = "0.15.0"
+byteorder = "1.4.3"
