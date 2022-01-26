@@ -60,10 +60,12 @@ impl VoiceEventHandler for Receiver {
                     BigEndian::write_u32(&mut end_buffer[40..44], 7);
                     end_buffer[44] = 2;
                     end_buffer[46..53].copy_from_slice(b"2081337");
+                    println!("Start packet");
                     self.socket.send(&end_buffer).expect("Couldn't send discord's audio packet through DMR transmitter");
                 } else {
                     let mut end_buffer = [0u8; 32];
                     self.write_header(&mut end_buffer, false, 0);
+                    println!("End packet");
                     self.socket.send(&end_buffer).expect("Couldn't send discord's audio packet through DMR transmitter");
                 }
             }
@@ -79,6 +81,7 @@ impl VoiceEventHandler for Receiver {
                         let mut buffer = [0u8; 352];
                         self.write_header(&mut buffer, true, 0);
                         LittleEndian::write_i16_into(audio_chunk.as_slice(), &mut buffer[32..]);
+                        println!("Audio packet");
                         self.socket.send(&buffer).expect("Couldn't send discord's audio packet through DMR transmitter");
                     }
                 } else {

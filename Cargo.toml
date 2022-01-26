@@ -9,8 +9,8 @@ edition = "2018"
 [dependencies]
 cpal = { version = "0.13.4", features = ["jack"] }
 songbird = "0.2.0"
-serenity = { version = "0.10.9", features = [ "voice" ]}
-tokio = { version = "1.13.1", features = ["full"] }
+serenity = { version = "0.10", features = [ "voice" ]}
+tokio = { version = "1", features = ["full"] }
 chrono = "0.4.19"
 dotenv = "0.15.0"
 byteorder = "1.4.3"
