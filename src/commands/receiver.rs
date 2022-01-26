@@ -33,15 +33,15 @@ impl Receiver {
         }
     }
 
-    pub fn write_header(&self, buffer: &mut [u8], transmit: bool) {
+    pub fn write_header(&self, buffer: &mut [u8], transmit: bool, packet_type: u32) {
         buffer[..4].copy_from_slice(b"USRP");
         let sequence = self.sequence.load(Ordering::Relaxed);
         BigEndian::write_u32(&mut buffer[4..8], sequence);
         self.sequence.fetch_add(1, Ordering::SeqCst);
-        BigEndian::write_u32(&mut buffer[8..12], 0);
+        BigEndian::write_u32(&mut buffer[8..12], 2);
         BigEndian::write_u32(&mut buffer[12..16], transmit as u32);
         BigEndian::write_u32(&mut buffer[16..20], 7);
-        BigEndian::write_u32(&mut buffer[20..24], 0);
+        BigEndian::write_u32(&mut buffer[20..24], packet_type);
         BigEndian::write_u32(&mut buffer[24..28], 0);
         BigEndian::write_u32(&mut buffer[28..32], 0);
     }
@@ -53,9 +53,17 @@ impl VoiceEventHandler for Receiver {
         use EventContext as Ctx;
         match ctx {
             Ctx::SpeakingUpdate(data) => {
-                if !data.speaking {
+                if data.speaking {
+                    let mut end_buffer = [0u8; 64];
+                    self.write_header(&mut end_buffer, false, 2);
+                    end_buffer[32] = 8;
+                    BigEndian::write_u32(&mut end_buffer[40..44], 7);
+                    end_buffer[44] = 2;
+                    end_buffer[46..53].copy_from_slice(b"2081337");
+                    self.socket.send(&end_buffer).expect("Couldn't send discord's audio packet through DMR transmitter");
+                } else {
                     let mut end_buffer = [0u8; 32];
-                    self.write_header(&mut end_buffer, false);
+                    self.write_header(&mut end_buffer, false, 0);
                     self.socket.send(&end_buffer).expect("Couldn't send discord's audio packet through DMR transmitter");
                 }
             }
@@ -69,7 +77,7 @@ impl VoiceEventHandler for Receiver {
                             audio_chunk.push(audio[i * 12]);
                         }
                         let mut buffer = [0u8; 352];
-                        self.write_header(&mut buffer, true);
+                        self.write_header(&mut buffer, true, 0);
                         LittleEndian::write_i16_into(audio_chunk.as_slice(), &mut buffer[32..]);
                         self.socket.send(&buffer).expect("Couldn't send discord's audio packet through DMR transmitter");
                     }
