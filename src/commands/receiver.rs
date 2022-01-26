@@ -45,11 +45,9 @@ impl Receiver {
 
         let (tx, rx) = sync_channel::<(USRPVoicePacketType, Vec<u8>)>(128);
         let close_receiver = Arc::new(AtomicBool::new(false));
-        let can_transmit_arc = Arc::new(AtomicBool::new(false));
-
         let close = close_receiver.clone();
-        let can_transmit = can_transmit_arc.clone();
         thread::spawn(move || {
+            let mut can_transmit = false;
             loop {
                 if close.load(Ordering::Relaxed) {
                     close.swap(false, Ordering::Relaxed);
@@ -58,11 +56,13 @@ impl Receiver {
                 match rx.recv() {
                     Ok((packet_type, packet)) => {
                         if packet_type == USRPVoicePacketType::START {
-                            can_transmit.swap(true, Ordering::Relaxed);
-                            println!("NOW TRUE, CAN TRANSMIT");
+                            can_transmit = true;
+                            println!("set can_transmit to true: {}", can_transmit);
                         }
-                        if can_transmit.load(Ordering::Relaxed) == true {
-                            println!("[INFO] SEND PACKET: {:?} (length: {}, ptt: {})", packet_type, packet.len(), BigEndian::read_u32(&packet[12..16]));
+                        println!("retrieve can_transmit: {}", can_transmit);
+                        if can_transmit == true {
+                            println!("transmitted");
+                            // println!("[INFO] SEND PACKET: {:?} (length: {}, ptt: {})", packet_type, packet.len(), BigEndian::read_u32(&packet[12..16]));
                             match socket.send(&*packet) {
                                 Err(_) => {
                                     close.swap(false, Ordering::Relaxed);
@@ -71,11 +71,12 @@ impl Receiver {
                                 _ => {}
                             }
                         } else {
-                            println!("[INFO] SKIPPED PACKET: {:?} (length: {}, ptt: {})", packet_type, packet.len(), BigEndian::read_u32(&packet[12..16]));
+                            println!("not transmitted");
+                            // println!("[INFO] SKIPPED PACKET: {:?} (length: {}, ptt: {})", packet_type, packet.len(), BigEndian::read_u32(&packet[12..16]));
                         }
                         if packet_type == USRPVoicePacketType::END {
-                            can_transmit.swap(false, Ordering::Relaxed);
-                            println!("NOW FALSE, CAN'T TRANSMIT");
+                            can_transmit = false;
+                            println!("set can_transmit to false: {}", can_transmit);
                         }
                     },
                     Err(_) => {
@@ -101,7 +102,7 @@ impl Receiver {
         BigEndian::write_u32(&mut buffer[8..12], 2);
         BigEndian::write_u32(&mut buffer[12..16], transmit as u32);
         BigEndian::write_u32(&mut buffer[16..20], 7);
-        BigEndian::write_u32(&mut buffer[20..24], packet_type);
+        LittleEndian::write_u32(&mut buffer[20..24], packet_type);
         BigEndian::write_u32(&mut buffer[24..28], 0);
         BigEndian::write_u32(&mut buffer[28..32], 0);
     }
