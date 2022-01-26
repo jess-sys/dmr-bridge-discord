@@ -14,10 +14,17 @@ use songbird::{
     EventHandler as VoiceEventHandler,
 };
 
+#[derive(PartialEq)]
+pub enum PacketType {
+    START,
+    AUDIO,
+    END
+}
+
 pub struct Receiver {
     sequence: AtomicU32,
     close_receiver: Arc<AtomicBool>,
-    tx: SyncSender<Vec<u8>>
+    tx: SyncSender<(PacketType, Vec<u8>)>
 }
 
 impl Drop for Receiver {
@@ -36,23 +43,33 @@ impl Receiver {
                 .expect("Expected a target rx address in the environment"))
             .expect("Couldn't connect to DMR's audio transmitter");
 
-        let (tx, rx) = sync_channel::<Vec<u8>>(128);
+        let (tx, rx) = sync_channel::<(PacketType, Vec<u8>)>(128);
         let close_receiver = Arc::new(AtomicBool::new(false));
 
         let close = close_receiver.clone();
         thread::spawn(move || {
+            let mut can_transmit = false;
             loop {
                 if close.load(Ordering::Relaxed) {
                     close.swap(false, Ordering::Relaxed);
                     return;
                 }
                 match rx.recv() {
-                    Ok(packet) => match socket.send(&*packet) {
-                        Err(_) => {
-                            close.swap(false, Ordering::Relaxed);
-                            return;
+                    Ok((packet_type, packet)) => {
+                        if packet_type == PacketType::START {
+                            can_transmit = true;
+                        } else if packet_type == PacketType::END {
+                            can_transmit = false;
                         }
-                        _ => {}
+                        if can_transmit {
+                            match socket.send(&*packet) {
+                                Err(_) => {
+                                    close.swap(false, Ordering::Relaxed);
+                                    return;
+                                }
+                                _ => {}
+                            }
+                        }
                     },
                     Err(_) => {
                         close.swap(false, Ordering::Relaxed);
@@ -97,13 +114,13 @@ impl VoiceEventHandler for Receiver {
                     start_buffer[44] = 2;
                     start_buffer[46..53].copy_from_slice(b"2081337");
                     println!("Start packet");
-                    self.tx.send(Vec::from(start_buffer))
+                    self.tx.send((PacketType::START, Vec::from(start_buffer)))
                         .expect("Couldn't send discord's audio packet through DMR transmitter");
                 } else {
                     let mut end_buffer = [0u8; 32];
                     self.write_header(&mut end_buffer, false, 0);
                     println!("End packet");
-                    self.tx.send(Vec::from(end_buffer))
+                    self.tx.send((PacketType::END, Vec::from(end_buffer)))
                         .expect("Couldn't send discord's audio packet through DMR transmitter");
                 }
             }
@@ -120,7 +137,7 @@ impl VoiceEventHandler for Receiver {
                         self.write_header(&mut packet_buffer, true, 0);
                         LittleEndian::write_i16_into(audio_chunk.as_slice(), &mut packet_buffer[32..]);
                         println!("Audio packet");
-                        self.tx.send(Vec::from(packet_buffer))
+                        self.tx.send((PacketType::AUDIO, Vec::from(packet_buffer)))
                             .expect("Couldn't send discord's audio packet through DMR transmitter");
                     }
                 } else {
