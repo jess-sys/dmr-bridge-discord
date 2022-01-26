@@ -45,12 +45,14 @@ impl Receiver {
 
         let (tx, rx) = sync_channel::<(USRPVoicePacketType, Vec<u8>)>(128);
         let close_receiver = Arc::new(AtomicBool::new(false));
-        let can_transmit = Arc::new(AtomicBool::new(false));
+        let can_transmit_arc = Arc::new(AtomicBool::new(false));
 
+        let close = close_receiver.clone();
+        let can_transmit = can_transmit_arc.clone();
         thread::spawn(move || {
             loop {
-                if close_receiver.load(Ordering::Relaxed) {
-                    close_receiver.swap(false, Ordering::Relaxed);
+                if close.load(Ordering::Relaxed) {
+                    close.swap(false, Ordering::Relaxed);
                     return;
                 }
                 match rx.recv() {
@@ -63,7 +65,7 @@ impl Receiver {
                             println!("[INFO] SEND PACKET: {:?} (length: {}, ptt: {})", packet_type, packet.len(), BigEndian::read_u32(&packet[12..16]));
                             match socket.send(&*packet) {
                                 Err(_) => {
-                                    close_receiver.swap(false, Ordering::Relaxed);
+                                    close.swap(false, Ordering::Relaxed);
                                     return;
                                 }
                                 _ => {}
@@ -77,7 +79,7 @@ impl Receiver {
                         }
                     },
                     Err(_) => {
-                        close_receiver.swap(false, Ordering::Relaxed);
+                        close.swap(false, Ordering::Relaxed);
                         return;
                     }
                 }
