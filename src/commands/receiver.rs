@@ -47,10 +47,18 @@ impl VoiceEventHandler for Receiver {
     async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
         use EventContext as Ctx;
         match ctx {
+            Ctx::SpeakingUpdate(data) => {
+                if !data.speaking {
+                    let mut end_buffer = [0u8; 32];
+                    self.write_header(&mut end_buffer, false);
+                    self.socket.send(&end_buffer).expect("Couldn't send discord's audio packet through DMR transmitter");
+                }
+            }
             Ctx::VoicePacket(data) => {
                 // An event which fires for every received audio packet,
                 // containing the decoded data.
                 if let Some(audio) = data.audio {
+                    println!("{:?}", audio.len());
                     let mut values = audio.into_iter().peekable();
                     while values.peek().is_some() {
                         let mut buffer = [0u8; 352];
@@ -59,9 +67,6 @@ impl VoiceEventHandler for Receiver {
                         LittleEndian::write_i16_into(audio_chunk.as_slice(), &mut buffer[32..]);
                         self.socket.send(&buffer).expect("Couldn't send discord's audio packet through DMR transmitter");
                     }
-                    let mut end_buffer = [0u8; 32];
-                    self.write_header(&mut end_buffer, false);
-                    self.socket.send(&end_buffer).expect("Couldn't send discord's audio packet through DMR transmitter");
                 } else {
                     println!("RTP packet, but no audio. Driver may not be configured to decode.");
                 }
