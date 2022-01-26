@@ -38,7 +38,12 @@ impl Receiver {
         let sequence = self.sequence.load(Ordering::Relaxed);
         BigEndian::write_u32(&mut buffer[4..8], sequence);
         self.sequence.fetch_add(1, Ordering::SeqCst);
-        BigEndian::write_u32(&mut buffer[8..12], transmit as u32);
+        BigEndian::write_u32(&mut buffer[8..12], 0);
+        BigEndian::write_u32(&mut buffer[12..16], transmit as u32);
+        BigEndian::write_u32(&mut buffer[16..20], 7);
+        BigEndian::write_u32(&mut buffer[20..24], 0);
+        BigEndian::write_u32(&mut buffer[24..28], 0);
+        BigEndian::write_u32(&mut buffer[28..32], 0);
     }
 }
 
