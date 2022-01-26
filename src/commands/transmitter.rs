@@ -4,15 +4,13 @@ use serenity::prelude::Mutex as SerenityMutex;
 use songbird::{Call, tracks::create_player, input::Input};
 use std::thread;
 use std::net::UdpSocket;
-use std::thread::JoinHandle;
+
 
 use songbird::input::{Codec, Container, Reader};
 use tokio::runtime::Runtime;
 
 pub struct Transmitter {
     discord_channel: Mutex<Option<Arc<SerenityMutex<Call>>>>,
-    sender: Mutex<Option<Arc<JoinHandle<()>>>>,
-    receiver: Mutex<Option<Arc<JoinHandle<()>>>>,
     close_sender: Arc<AtomicBool>,
     close_receiver: Arc<AtomicBool>,
     tx: Option<SyncSender<Vec<u8>>>,
@@ -31,8 +29,6 @@ impl Transmitter {
 
         Self {
             discord_channel: Mutex::new(None),
-            sender: Mutex::new(None),
-            receiver: Mutex::new(None),
             close_sender: Arc::new(AtomicBool::new(false)),
             close_receiver: Arc::new(AtomicBool::new(false)),
             tx: None
@@ -40,8 +36,6 @@ impl Transmitter {
     }
 
     pub fn start(&mut self) {
-        self.close_receiver.swap(false, Ordering::Relaxed);
-        self.close_sender.swap(false, Ordering::Relaxed);
         self.start_receiver();
         self.start_sender();
     }
@@ -49,8 +43,6 @@ impl Transmitter {
     pub fn stop(&mut self) {
         self.close_receiver.swap(true, Ordering::Relaxed);
         self.close_sender.swap(true, Ordering::Relaxed);
-        self.stop_sender();
-        self.stop_receiver();
     }
 
     pub fn start_sender(&mut self) {
@@ -66,8 +58,8 @@ impl Transmitter {
         if self.tx.is_some() {
             let tx = self.tx.clone().unwrap();
             let close = self.close_sender.clone();
-            let mut sender = self.sender.lock().unwrap();
-            *sender = Some(Arc::new(thread::spawn(move || {
+            self.close_sender.swap(false, Ordering::Relaxed);
+            thread::spawn(move || {
 
                 loop {
                     let mut buffer = [0u8; 352];
@@ -79,34 +71,29 @@ impl Transmitter {
                     match socket.recv(&mut buffer) {
                         Ok(_n) => match tx.send(Vec::from(&buffer[32..])) {
                             Err(_) => {
+                                close.swap(false, Ordering::Relaxed);
                                 return;
                             }
                             _ => {}
                         },
                         Err(_) => {
+                            close.swap(false, Ordering::Relaxed);
                             return;
                         }
                     }
                 }
-            })));
-        }
-    }
-
-    pub fn stop_sender(&mut self) {
-        let sender = self.sender.lock().unwrap();
-        if sender.is_some() {
-            self.close_sender.swap(true, Ordering::Relaxed);
+            });
         }
     }
 
     pub fn start_receiver(&mut self) {
         let discord_channel = self.discord_channel.lock().unwrap().clone();
         let close = self.close_receiver.clone();
-        let (tx, rx) = sync_channel(4);
+        let (tx, rx) = sync_channel(128);
         self.tx = Some(tx);
-        let mut receiver = self.receiver.lock().unwrap();
 
-        *receiver = Some(Arc::new(thread::spawn(move || {
+        self.close_receiver.swap(false, Ordering::Relaxed);
+        thread::spawn(move || {
             loop {
                 if close.load(Ordering::Relaxed) {
                     close.swap(false, Ordering::Relaxed);
@@ -132,18 +119,12 @@ impl Transmitter {
                         }
                     }
                     Err(_) => {
+                        close.swap(false, Ordering::Relaxed);
                         return;
                     }
                 }
             }
-        })));
-    }
-
-    pub fn stop_receiver(&mut self) {
-        let receiver = self.receiver.lock().unwrap();
-        if receiver.is_some() {
-            self.close_receiver.swap(true, Ordering::Relaxed);
-        }
+        });
     }
 
     pub fn set(&mut self, device: Arc<SerenityMutex<Call>>) {
