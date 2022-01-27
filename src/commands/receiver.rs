@@ -105,12 +105,14 @@ impl Receiver {
         let sequence = self.sequence.load(Ordering::Relaxed);
         BigEndian::write_u32(&mut buffer[4..8], sequence);
         self.sequence.fetch_add(1, Ordering::SeqCst);
-        BigEndian::write_u32(&mut buffer[8..12], 2);
-        BigEndian::write_u32(&mut buffer[12..16], transmit as u32);
-        BigEndian::write_u32(&mut buffer[16..20], 7);
         LittleEndian::write_u32(&mut buffer[20..24], packet_type);
-        BigEndian::write_u32(&mut buffer[24..28], 0);
-        BigEndian::write_u32(&mut buffer[28..32], 0);
+        if packet_type != 2 {
+            BigEndian::write_u32(&mut buffer[8..12], 2);
+            BigEndian::write_u32(&mut buffer[12..16], transmit as u32);
+            BigEndian::write_u32(&mut buffer[16..20], 7);
+            BigEndian::write_u32(&mut buffer[24..28], 0);
+            BigEndian::write_u32(&mut buffer[28..32], 0);
+        }
     }
 }
 
@@ -122,11 +124,10 @@ impl VoiceEventHandler for Receiver {
             Ctx::SpeakingUpdate(data) => {
                 if data.speaking {
                     let mut start_buffer = [0u8; 352];
-                    self.write_header(&mut start_buffer, true, 2);
-                    start_buffer[32] = 8;
-                    BigEndian::write_u32(&mut start_buffer[40..44], 7);
-                    start_buffer[44] = 2;
-                    start_buffer[46..53].copy_from_slice(b"2081337");
+                    let header: [u8; 21] = [0x08, 0x14, 0x1F, 0xC2, 0x39, 0x0C, 0x67, 0xDE, 0x45,
+                    0x00, 0x00, 0x07, 0x02, 0x00, 0x32, 0x30, 0x38, 0x31, 0x33, 0x33, 0x37];
+                    self.write_header(&mut start_buffer, false, 2);
+                    start_buffer[32..53].copy_from_slice(&header);
                     self.tx.send(Some((USRPVoicePacketType::START, Vec::from(start_buffer))))
                         .expect("Couldn't send discord's audio packet through DMR transmitter");
                 } else {
