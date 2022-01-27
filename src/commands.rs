@@ -60,15 +60,16 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
     if let Ok(_) = conn_result {
         // NOTE: this skips listening for the actual connection result.
         let mut handler = handler_lock.lock().await;
+        let receiver = Arc::new(Receiver::new());
 
         handler.add_global_event(
             CoreEvent::VoicePacket.into(),
-            Receiver::new(),
+            *receiver.clone(),
         );
 
         handler.add_global_event(
             CoreEvent::SpeakingUpdate.into(),
-            Receiver::new(),
+            *receiver.clone(),
         );
 
 
