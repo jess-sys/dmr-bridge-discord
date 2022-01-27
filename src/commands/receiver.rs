@@ -121,7 +121,7 @@ impl VoiceEventHandler for Receiver {
         match ctx {
             Ctx::SpeakingUpdate(data) => {
                 if data.speaking {
-                    let mut start_buffer = [0u8; 64];
+                    let mut start_buffer = [0u8; 352];
                     self.write_header(&mut start_buffer, true, 2);
                     start_buffer[32] = 8;
                     BigEndian::write_u32(&mut start_buffer[40..44], 7);
