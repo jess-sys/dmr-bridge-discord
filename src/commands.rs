@@ -131,8 +131,8 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
     let now = Utc::now();
-    let elasped = now - msg.timestamp;
-    check_msg(msg.reply(ctx, format!("Pong! ({} ms)", elasped.num_milliseconds())).await);
+    let elapsed = now - msg.timestamp;
+    check_msg(msg.reply(ctx, format!("Pong! ({} ms)", elapsed.num_milliseconds())).await);
 
     Ok(())
 }
