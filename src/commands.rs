@@ -22,6 +22,7 @@ pub mod transmitter;
 use chrono::prelude::Utc;
 use receiver::Receiver;
 use transmitter::Transmitter;
+use crate::commands::receiver::ReceiverWrapper;
 
 pub struct DMRContext;
 
@@ -60,18 +61,19 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
     if let Ok(_) = conn_result {
         // NOTE: this skips listening for the actual connection result.
         let mut handler = handler_lock.lock().await;
-        let receiver = Arc::new(Receiver::new());
 
+        let receiver = Arc::new(Receiver::new());
+        let speaking_state_update_receiver = ReceiverWrapper::new(receiver.clone());
+        let voice_packet_receiver = ReceiverWrapper::new(receiver.clone());
+
+        handler.add_global_event(
+            CoreEvent::SpeakingStateUpdate.into(),
+            speaking_state_update_receiver,
+        );
         handler.add_global_event(
             CoreEvent::VoicePacket.into(),
-            *receiver.clone(),
+            voice_packet_receiver,
         );
-
-        handler.add_global_event(
-            CoreEvent::SpeakingUpdate.into(),
-            *receiver.clone(),
-        );
-
 
         let transmitter_lock = {
             let data_read = ctx.data.read().await;

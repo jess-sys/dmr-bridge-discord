@@ -5,6 +5,7 @@ use byteorder::{ByteOrder, BigEndian, LittleEndian};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::{env, thread};
 use std::net::UdpSocket;
+use std::sync::Arc;
 
 use std::sync::mpsc::{sync_channel, SyncSender};
 
@@ -28,9 +29,29 @@ pub struct Receiver {
 
 impl Drop for Receiver {
     fn drop(&mut self) {
-        self.tx.send(None);
+        self.tx.send(None).unwrap();
     }
 }
+
+pub struct ReceiverWrapper {
+    receiver: Arc<Receiver>
+}
+
+impl ReceiverWrapper {
+    pub fn new(receiver: Arc<Receiver>) -> Self {
+        Self {
+           receiver
+        }
+    }
+}
+
+#[async_trait]
+impl VoiceEventHandler for ReceiverWrapper {
+    async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
+        self.receiver.act(ctx).await
+    }
+}
+
 
 impl Receiver {
     pub fn new() -> Self {
