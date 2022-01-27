@@ -63,12 +63,12 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
         let mut handler = handler_lock.lock().await;
 
         let receiver = Arc::new(Receiver::new());
-        let speaking_state_update_receiver = ReceiverWrapper::new(receiver.clone());
+        let speaking_update_receiver = ReceiverWrapper::new(receiver.clone());
         let voice_packet_receiver = ReceiverWrapper::new(receiver.clone());
 
         handler.add_global_event(
-            CoreEvent::SpeakingStateUpdate.into(),
-            speaking_state_update_receiver,
+            CoreEvent::SpeakingUpdate.into(),
+            speaking_update_receiver,
         );
         handler.add_global_event(
             CoreEvent::VoicePacket.into(),
