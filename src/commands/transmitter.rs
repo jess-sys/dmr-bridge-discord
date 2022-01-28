@@ -11,6 +11,7 @@ use std::sync::{
     Arc, Mutex, MutexGuard,
 };
 use std::thread;
+use songbird::input::cached::Memory;
 use tokio::runtime::Runtime;
 
 #[derive(PartialEq, Debug)]
@@ -62,13 +63,13 @@ impl Transmitter {
                             .collect();
                         let mut new_data: [u8; 3840] = [0; 3840];
                         LittleEndian::write_i16_into(&frames, &mut new_data);
-                        let (audio, _audio_handle) = create_player(Input::new(
+                        let audio = Input::new(
                             false,
                             Reader::from_memory(Vec::from(new_data)),
                             Codec::Pcm,
                             Container::Raw,
                             None,
-                        ));
+                        );
                         {
                             let channel: MutexGuard<Option<Arc<SerenityMutex<Call>>>> =
                                 channel_ref.lock().unwrap();
@@ -76,7 +77,7 @@ impl Transmitter {
                                 Some(device) => {
                                     let rt = Runtime::new().unwrap();
                                     let mut call = rt.block_on(async { device.lock().await });
-                                    call.play_only(audio);
+                                    call.play_source(audio);
                                 }
                                 None => {
                                     println!("Missing discord channel");
