@@ -12,25 +12,38 @@ The target server is AnalogBridge (see <https://github.com/DVSwitch/Analog_Bridg
 
 ![Diagram](https://i.ibb.co/2FGzLbY/DMRBridge-Discord.png)
 
+### Build
+
+Make sure you have [Rust installed](https://rustup.rs/)
+
+```bash
+cargo build --release
+# or run it directly :
+cargo run
+```
+
 ### Install
 
 ```bash
 # Coming soon
+make install-systemd
 ```
 
-### Usage
+### Run
 
-First edit the `.env` file to reflect your infrastructure :
+#### Portable install
+
+Do the following after you've built or [downloaded the pre-compiled version](https://github.com/jess-sys/dmr-bridge-discord/releases).
+
+Edit the `.env` file to reflect your infrastructure :
 
 * `BOT_TOKEN` : see [this link](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token) to know how to get a token
 * `DMR_TARGET` : your Analog Bridge IP
 
-#### Manually
-
-You can start DMRBridgeDiscord :
+Then execute the binary in the same folder or export the environment variables present in the .env file.
 
 ```bash
-# Coming soon
+./dmr-bridge-discord-linux
 ```
 
 #### Inside a container
@@ -38,15 +51,17 @@ You can start DMRBridgeDiscord :
 You can use the docker-compose configuration file:
 
 ```bash
+# coming soon - not available atm
 docker-compose up
 ```
 
 ## Todo
 
 * Discord multiple voice users at once (merge audio channels)
-* dtmf and text messages
+* Verbosity levels
+* SMS and DTMF messages
 * Full Docker support
-* systemd service support
+* systemd services support
 
 ## Useless stuff (Copyright)
 
