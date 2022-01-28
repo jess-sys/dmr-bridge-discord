@@ -1,8 +1,5 @@
 # dmr-bridge-discord
 
-[![https://nodei.co/npm/dmr-bridge-discord.png?downloads=true&downloadRank=true&stars=true](https://nodei.co/npm/dmr-bridge-discord.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/dmr-bridge-discord)
-
-[![NodeJS](https://img.shields.io/badge/Made_with-NodeJS-green?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
 [![License](https://img.shields.io/badge/License-GPLv3-blue?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
 
 Bridge a DMR network with a Discord voice channel.
@@ -18,10 +15,7 @@ The target server is AnalogBridge (see <https://github.com/DVSwitch/Analog_Bridg
 ### Install
 
 ```bash
-git clone https://github.com/jess-sys/DMRBridgeDiscord.git
-cd DMRBridgeDiscord 
-cp .env.example .env
-yarn install
+# Coming soon
 ```
 
 ### Usage
@@ -36,7 +30,7 @@ First edit the `.env` file to reflect your infrastructure :
 You can start DMRBridgeDiscord :
 
 ```bash
-yarn start
+# Coming soon
 ```
 
 #### Inside a container
@@ -49,15 +43,14 @@ docker-compose up
 
 ## Todo
 
-* transmit
+* Discord multiple voice users at once (merge audio channels)
 * dtmf and text messages
-* Docker support
-* pm2 support
+* Full Docker support
 * systemd service support
 
 ## Useless stuff (Copyright)
 
-Copyright (C) 2020 Jessy SOBREIRO
+Copyright (C) 2022 Jessy SOBREIRO
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
