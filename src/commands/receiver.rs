@@ -75,8 +75,8 @@ impl Receiver {
                                 can_transmit = true;
                             }
                             if can_transmit == true {
-                                let ten_millis = time::Duration::from_millis(2);
-                                thread::sleep(ten_millis);
+                                let two_millis = time::Duration::from_millis(2);
+                                thread::sleep(two_millis);
                                 println!("[INFO] SEND PACKET: {:?} (length: {}, ptt: {})",
                                          packet_type, packet_data.len(),
                                          BigEndian::read_u32(&packet_data[12..16]));
