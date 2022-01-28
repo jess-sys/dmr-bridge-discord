@@ -96,30 +96,36 @@ impl Transmitter {
 
             match socket.recv(&mut buffer) {
                 Ok(packet_size) => {
-                    let packet_type_as_num = LittleEndian::read_u32(&mut buffer[20..24]);
-                    let packet_type = match packet_type_as_num {
-                        0 => {
-                            if packet_size == 32 {
-                                USRPVoicePacketType::END
-                            } else {
-                                USRPVoicePacketType::AUDIO
+                    if packet_size >= 32 {
+                        let packet_type_as_num = LittleEndian::read_u32(&mut buffer[20..24]);
+                        let packet_type = match packet_type_as_num {
+                            0 => {
+                                if packet_size == 32 {
+                                    USRPVoicePacketType::END
+                                } else {
+                                    USRPVoicePacketType::AUDIO
+                                }
+                            }
+                            2 => USRPVoicePacketType::START,
+                            _ => USRPVoicePacketType::AUDIO,
+                        };
+                        println!(
+                            "[INFO] RECEIVED PACKET: {:?} (length: {}, ptt: {})",
+                            packet_type,
+                            packet_size,
+                            BigEndian::read_u32(&buffer[12..16])
+                        );
+                        if packet_type == USRPVoicePacketType::AUDIO {
+                            let audio = Vec::from(&buffer[32..]);
+                            if audio.len() == 320 {
+                                match sub_tx.send(Some(audio)) {
+                                    Err(_) => return,
+                                    _ => {}
+                                }
                             }
                         }
-                        2 => USRPVoicePacketType::START,
-                        _ => USRPVoicePacketType::AUDIO,
-                    };
-                    println!(
-                        "[INFO] RECEIVED PACKET: {:?} (length: {}, ptt: {})",
-                        packet_type,
-                        packet_size,
-                        BigEndian::read_u32(&buffer[12..16])
-                    );
-                    if packet_type == USRPVoicePacketType::AUDIO {
-                        match sub_tx.send(Some(Vec::from(&buffer[32..]))) {
-                            Err(_) => return,
-                            _ => {}
-                        }
                     }
+
                 }
                 Err(_) => return,
             }
