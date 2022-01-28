@@ -43,7 +43,7 @@ impl Transmitter {
 
         let discord_channel = Arc::new(Mutex::new(None));
 
-        let (tx, rx) = sync_channel::<Option<Vec<u8>>>(128);
+        let (tx, rx) = sync_channel::<Option<Vec<u8>>>(512);
 
         let channel_ref = discord_channel.clone();
         thread::spawn(move || loop {
@@ -77,7 +77,7 @@ impl Transmitter {
                                     let rt = Runtime::new().unwrap();
                                     let mut call = rt.block_on(async { device.lock().await });
                                     call.play_source(audio);
-                                    let two_millis = time::Duration::from_millis(4);
+                                    let two_millis = time::Duration::from_millis(18);
                                     thread::sleep(two_millis);
                                 }
                                 None => {}

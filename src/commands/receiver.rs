@@ -62,7 +62,7 @@ impl Receiver {
             .connect(dmr_target_rx_addr)
             .expect("Couldn't connect to DMR's audio transmitter");
 
-        let (tx, rx) = sync_channel::<Option<(USRPVoicePacketType, Vec<u8>)>>(128);
+        let (tx, rx) = sync_channel::<Option<(USRPVoicePacketType, Vec<u8>)>>(512);
 
         thread::spawn(move || {
             let mut can_transmit = false;
