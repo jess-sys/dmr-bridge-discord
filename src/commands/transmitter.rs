@@ -50,7 +50,7 @@ impl Transmitter {
             match rx.recv() {
                 Ok(packet) => match packet {
                     Some(packet_data) => {
-                        let mut data = Vec::with_capacity(160);
+                        let mut data: [i16; 160] = [0; 160];
                         LittleEndian::read_i16_into(&packet_data, &mut data);
                         let mut source = signal::from_iter(data.iter().cloned());
                         let first = source.next();
@@ -60,11 +60,11 @@ impl Transmitter {
                             .from_hz_to_hz(interpolator, 8000.0, 96000.0)
                             .take(1920)
                             .collect();
-                        let mut new_data = Vec::with_capacity(3840);
+                        let mut new_data: [u8; 3840] = [0; 3840];
                         LittleEndian::write_i16_into(&frames, &mut new_data);
                         let (audio, _audio_handle) = create_player(Input::new(
                             false,
-                            Reader::from_memory(new_data),
+                            Reader::from_memory(Vec::from(new_data)),
                             Codec::Pcm,
                             Container::Raw,
                             None,
