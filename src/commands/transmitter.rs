@@ -58,10 +58,10 @@ impl Transmitter {
                         let second = source.next();
                         let interpolator = Linear::new(first, second);
                         let frames: Vec<_> = source
-                            .from_hz_to_hz(interpolator, 8000.0, 96000.0)
-                            .take(1920)
+                            .from_hz_to_hz(interpolator, 8000.0, 48000.0)
+                            .take(960)
                             .collect();
-                        let mut new_data: [u8; 3840] = [0; 3840];
+                        let mut new_data: [u8; 1920] = [0; 1920];
                         LittleEndian::write_i16_into(&frames, &mut new_data);
                         let audio = Input::new(
                             false,
