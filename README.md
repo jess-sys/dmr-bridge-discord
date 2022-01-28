@@ -38,12 +38,20 @@ Do the following after you've built or [downloaded the pre-compiled version](htt
 Edit the `.env` file to reflect your infrastructure :
 
 * `BOT_TOKEN` : see [this link](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token) to know how to get a token
-* `DMR_TARGET` : your Analog Bridge IP
+* `BOT_PREFIX` : prefix to add before the bot's commands 
+* `DMR_TARGET_RX_ADDR` : your Analog Bridge IP and port
+* `DMR_TARGET_TX_ADDR` : your dmr-bridge-discord IP and port (is localhost)
 
 Then execute the binary in the same folder or export the environment variables present in the .env file.
 
 ```bash
 ./dmr-bridge-discord-linux
+```
+
+Here is the bot's commands:
+```
+"join" : Make the bot join the channel (need to be in a voice channel)
+"leave" : Make the bot left the channel
 ```
 
 #### Inside a container
