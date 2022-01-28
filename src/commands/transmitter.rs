@@ -3,15 +3,14 @@ use dasp_interpolate::linear::Linear;
 use dasp_signal::{self as signal, Signal};
 use serenity::prelude::Mutex as SerenityMutex;
 use songbird::input::{Codec, Container, Reader};
-use songbird::{input::Input, tracks::create_player, Call};
-use std::env;
+use songbird::{input::Input, Call};
+use std::{env, time};
 use std::net::UdpSocket;
 use std::sync::{
     mpsc::{sync_channel, SyncSender},
     Arc, Mutex, MutexGuard,
 };
 use std::thread;
-use songbird::input::cached::Memory;
 use tokio::runtime::Runtime;
 
 #[derive(PartialEq, Debug)]
@@ -78,10 +77,10 @@ impl Transmitter {
                                     let rt = Runtime::new().unwrap();
                                     let mut call = rt.block_on(async { device.lock().await });
                                     call.play_source(audio);
+                                    let two_millis = time::Duration::from_millis(2);
+                                    thread::sleep(two_millis);
                                 }
-                                None => {
-                                    println!("Missing discord channel");
-                                }
+                                None => {}
                             }
                         }
                     }
