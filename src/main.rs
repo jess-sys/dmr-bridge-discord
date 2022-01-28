@@ -1,25 +1,12 @@
-use serenity::{
-    client::Client,
-    framework::{
-        StandardFramework,
-    },
-    prelude::Mutex
-};
+use serenity::{client::Client, framework::StandardFramework, prelude::Mutex};
 
-use songbird::{
-    driver::DecodeMode,
-    Config,
-    SerenityInit,
-};
+use songbird::{driver::DecodeMode, Config, SerenityInit};
 
 use dotenv::dotenv;
-use std::{
-    env,
-    sync::Arc
-};
+use std::{env, sync::Arc};
 
-mod handler;
 mod commands;
+mod handler;
 
 use commands::transmitter::Transmitter;
 use handler::Handler;
@@ -28,17 +15,19 @@ use handler::Handler;
 async fn main() {
     dotenv().ok();
 
-    let token = env::var("BOT_TOKEN")
-        .expect("Expected a token in the environment");
+    let token = env::var("BOT_TOKEN").expect("Expected a token in the environment");
 
     let framework = StandardFramework::new()
-        .configure(|c| c
-            .prefix(env::var("BOT_PREFIX")
-                .expect("Expected a prefix in the environment").as_str()))
+        .configure(|c| {
+            c.prefix(
+                env::var("BOT_PREFIX")
+                    .expect("Expected a prefix in the environment")
+                    .as_str(),
+            )
+        })
         .group(&commands::GENERAL_GROUP);
 
-    let songbird_config = Config::default()
-        .decode_mode(DecodeMode::Decode);
+    let songbird_config = Config::default().decode_mode(DecodeMode::Decode);
 
     let mut client = Client::builder(&token)
         .event_handler(Handler)
@@ -52,5 +41,8 @@ async fn main() {
         data.insert::<commands::DMRContext>(Arc::new(Mutex::new(Transmitter::new())));
     }
 
-    let _ = client.start().await.map_err(|why| println!("Client ended: {:?}", why));
+    let _ = client
+        .start()
+        .await
+        .map_err(|why| println!("Client ended: {:?}", why));
 }

@@ -1,30 +1,26 @@
 use serenity::async_trait;
 
-use byteorder::{ByteOrder, BigEndian, LittleEndian};
+use byteorder::{BigEndian, ByteOrder, LittleEndian};
 
-use std::sync::atomic::{AtomicU32, Ordering};
-use std::{env, thread, time};
 use std::net::UdpSocket;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::{env, thread, time};
 
 use std::sync::mpsc::{sync_channel, SyncSender};
 
-use songbird::{
-    Event,
-    EventContext,
-    EventHandler as VoiceEventHandler,
-};
+use songbird::{Event, EventContext, EventHandler as VoiceEventHandler};
 
 #[derive(PartialEq, Debug)]
 pub enum USRPVoicePacketType {
     START,
     AUDIO,
-    END
+    END,
 }
 
 pub struct Receiver {
     sequence: AtomicU32,
-    tx: SyncSender<Option<(USRPVoicePacketType, Vec<u8>)>>
+    tx: SyncSender<Option<(USRPVoicePacketType, Vec<u8>)>>,
 }
 
 impl Drop for Receiver {
@@ -34,14 +30,12 @@ impl Drop for Receiver {
 }
 
 pub struct ReceiverWrapper {
-    receiver: Arc<Receiver>
+    receiver: Arc<Receiver>,
 }
 
 impl ReceiverWrapper {
     pub fn new(receiver: Arc<Receiver>) -> Self {
-        Self {
-           receiver
-        }
+        Self { receiver }
     }
 }
 
@@ -51,7 +45,6 @@ impl VoiceEventHandler for ReceiverWrapper {
         self.receiver.act(ctx).await
     }
 }
-
 
 impl Receiver {
     pub fn new() -> Self {
@@ -63,7 +56,8 @@ impl Receiver {
         let socket = UdpSocket::bind("127.0.0.1:0")
             .expect("Couldn't bind udp socket for discord's audio receiver");
 
-        socket.connect(dmr_target_rx_addr)
+        socket
+            .connect(dmr_target_rx_addr)
             .expect("Couldn't connect to DMR's audio transmitter");
 
         let (tx, rx) = sync_channel::<Option<(USRPVoicePacketType, Vec<u8>)>>(128);
@@ -80,18 +74,21 @@ impl Receiver {
                             if can_transmit == true {
                                 let two_millis = time::Duration::from_millis(2);
                                 thread::sleep(two_millis);
-                                println!("[INFO] SEND PACKET: {:?} (length: {}, ptt: {})",
-                                         packet_type, packet_data.len(),
-                                         BigEndian::read_u32(&packet_data[12..16]));
+                                println!(
+                                    "[INFO] SEND PACKET: {:?} (length: {}, ptt: {})",
+                                    packet_type,
+                                    packet_data.len(),
+                                    BigEndian::read_u32(&packet_data[12..16])
+                                );
                                 match socket.send(&*packet_data) {
-                                    Ok(_) => {},
+                                    Ok(_) => {}
                                     Err(_) => return,
                                 }
                             }
                             if packet_type == USRPVoicePacketType::END {
                                 can_transmit = false;
                             }
-                        },
+                        }
                         None => return,
                     },
                     Err(_) => return,
@@ -99,9 +96,9 @@ impl Receiver {
             }
         });
 
-        Self { 
+        Self {
             sequence: AtomicU32::new(0),
-            tx
+            tx,
         }
     }
 
@@ -129,16 +126,20 @@ impl VoiceEventHandler for Receiver {
             Ctx::SpeakingUpdate(data) => {
                 if data.speaking {
                     let mut start_buffer = [0u8; 352];
-                    let header: [u8; 21] = [0x08, 0x14, 0x1F, 0xC2, 0x39, 0x0C, 0x67, 0xDE, 0x45,
-                    0x00, 0x00, 0x07, 0x02, 0x00, 0x32, 0x30, 0x38, 0x31, 0x33, 0x33, 0x37];
+                    let header: [u8; 21] = [
+                        0x08, 0x14, 0x1F, 0xC2, 0x39, 0x0C, 0x67, 0xDE, 0x45, 0x00, 0x00, 0x07,
+                        0x02, 0x00, 0x32, 0x30, 0x38, 0x31, 0x33, 0x33, 0x37,
+                    ];
                     self.write_header(&mut start_buffer, false, 2);
                     start_buffer[32..53].copy_from_slice(&header);
-                    self.tx.send(Some((USRPVoicePacketType::START, Vec::from(start_buffer))))
+                    self.tx
+                        .send(Some((USRPVoicePacketType::START, Vec::from(start_buffer))))
                         .expect("Couldn't send discord's audio packet through DMR transmitter");
                 } else {
                     let mut end_buffer = [0u8; 32];
                     self.write_header(&mut end_buffer, false, 0);
-                    self.tx.send(Some((USRPVoicePacketType::END, Vec::from(end_buffer))))
+                    self.tx
+                        .send(Some((USRPVoicePacketType::END, Vec::from(end_buffer))))
                         .expect("Couldn't send discord's audio packet through DMR transmitter");
                 }
             }
@@ -154,13 +155,14 @@ impl VoiceEventHandler for Receiver {
                         let mut packet_buffer = [0u8; 352];
                         self.write_header(&mut packet_buffer, true, 0);
                         LittleEndian::write_i16_into(&audio_chunk, &mut packet_buffer[32..]);
-                        self.tx.send(Some((USRPVoicePacketType::AUDIO, Vec::from(packet_buffer))))
+                        self.tx
+                            .send(Some((USRPVoicePacketType::AUDIO, Vec::from(packet_buffer))))
                             .expect("Couldn't send discord's audio packet through DMR transmitter");
                     }
                 } else {
                     println!("RTP packet, but no audio. Driver may not be configured to decode.");
                 }
-            },
+            }
             _ => {
                 // We won't be registering this struct for any more event classes.
                 unimplemented!()
