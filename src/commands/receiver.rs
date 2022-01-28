@@ -148,7 +148,7 @@ impl VoiceEventHandler for Receiver {
                         }
                         let mut packet_buffer = [0u8; 352];
                         self.write_header(&mut packet_buffer, true, 0);
-                        LittleEndian::write_i16_into(audio_chunk.as_slice(), &mut packet_buffer[32..]);
+                        LittleEndian::write_i16_into(&audio_chunk, &mut packet_buffer[32..]);
                         self.tx.send(Some((USRPVoicePacketType::AUDIO, Vec::from(packet_buffer))))
                             .expect("Couldn't send discord's audio packet through DMR transmitter");
                     }
