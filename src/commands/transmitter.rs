@@ -4,13 +4,13 @@ use dasp_signal::{self as signal, Signal};
 use serenity::prelude::Mutex as SerenityMutex;
 use songbird::input::{Codec, Container, Reader};
 use songbird::{input::Input, Call};
-use std::{env, time};
 use std::net::UdpSocket;
 use std::sync::{
     mpsc::{sync_channel, SyncSender},
     Arc, Mutex, MutexGuard,
 };
 use std::thread;
+use std::{env, time};
 use tokio::runtime::Runtime;
 
 #[derive(PartialEq, Debug)]
@@ -125,7 +125,6 @@ impl Transmitter {
                             }
                         }
                     }
-
                 }
                 Err(_) => return,
             }
