@@ -109,7 +109,7 @@ impl Transmitter {
         });
 
         Self {
-            discord_channel.clone(),
+            discord_channel,
             tx,
         }
     }
