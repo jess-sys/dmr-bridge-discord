@@ -1,12 +1,16 @@
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
+use dasp_interpolate::linear::Linear;
+use dasp_signal::{self as signal, Signal};
 use serenity::prelude::Mutex as SerenityMutex;
+use songbird::input::{Codec, Container, Reader};
 use songbird::{input::Input, tracks::create_player, Call};
 use std::env;
 use std::net::UdpSocket;
-use std::sync::{mpsc::{sync_channel, SyncSender}, Arc, Mutex, MutexGuard};
+use std::sync::{
+    mpsc::{sync_channel, SyncSender},
+    Arc, Mutex, MutexGuard,
+};
 use std::thread;
-
-use songbird::input::{Codec, Container, Reader};
 use tokio::runtime::Runtime;
 
 #[derive(PartialEq, Debug)]
@@ -17,7 +21,7 @@ pub enum USRPVoicePacketType {
 }
 
 pub struct Transmitter {
-    discord_channel: Arc<Mutex::<Option<Arc<SerenityMutex<Call>>>>>,
+    discord_channel: Arc<Mutex<Option<Arc<SerenityMutex<Call>>>>>,
     tx: SyncSender<Option<Vec<u8>>>,
 }
 
@@ -46,15 +50,28 @@ impl Transmitter {
             match rx.recv() {
                 Ok(packet) => match packet {
                     Some(packet_data) => {
+                        let mut data = Vec::with_capacity(160);
+                        LittleEndian::read_i16_into(&packet_data, &mut data);
+                        let mut source = signal::from_iter(data.iter().cloned());
+                        let first = source.next();
+                        let second = source.next();
+                        let interpolator = Linear::new(first, second);
+                        let frames: Vec<_> = source
+                            .from_hz_to_hz(interpolator, 8000.0, 96000.0)
+                            .take(1920)
+                            .collect();
+                        let mut new_data = Vec::with_capacity(3840);
+                        LittleEndian::write_i16_into(&frames, &mut new_data);
                         let (audio, _audio_handle) = create_player(Input::new(
                             false,
-                            Reader::from_memory(packet_data),
+                            Reader::from_memory(new_data),
                             Codec::Pcm,
                             Container::Raw,
                             None,
                         ));
                         {
-                            let channel: MutexGuard<Option<Arc<SerenityMutex<Call>>>> = channel_ref.lock().unwrap();
+                            let channel: MutexGuard<Option<Arc<SerenityMutex<Call>>>> =
+                                channel_ref.lock().unwrap();
                             match &*channel {
                                 Some(device) => {
                                     let rt = Runtime::new().unwrap();
