@@ -4,10 +4,18 @@ use serenity::prelude::Mutex as SerenityMutex;
 use songbird::{Call, tracks::create_player, input::Input};
 use std::thread;
 use std::net::UdpSocket;
+use byteorder::{BigEndian, ByteOrder, LittleEndian};
 
 
 use songbird::input::{Codec, Container, Reader};
 use tokio::runtime::Runtime;
+
+#[derive(PartialEq, Debug)]
+pub enum USRPVoicePacketType {
+    START,
+    AUDIO,
+    END
+}
 
 pub struct Transmitter {
     discord_channel: Mutex<Option<Arc<SerenityMutex<Call>>>>,
@@ -73,9 +81,29 @@ impl Transmitter {
                 let mut buffer = [0u8; 352];
 
                 match socket.recv(&mut buffer) {
-                    Ok(_n) => match sub_tx.send(Some(Vec::from(&buffer[32..]))) {
-                        Err(_) => return,
-                        _ => {}
+
+                    Ok(packet_size) => {
+                        let packet_type_as_num = LittleEndian::read_u32(&mut buffer[20..24]);
+                        let packet_type = match packet_type_as_num {
+                            0 => {
+                                if packet_size == 32 {
+                                    USRPVoicePacketType::END
+                                } else {
+                                    USRPVoicePacketType::AUDIO
+                                }
+                            },
+                            2 => USRPVoicePacketType::START,
+                            _ => USRPVoicePacketType::AUDIO
+                        };
+                        println!("[INFO] RECEIVED PACKET: {:?} (length: {}, ptt: {})",
+                                 packet_type, packet_size,
+                                 BigEndian::read_u32(&buffer[12..16]));
+                        if packet_type == USRPVoicePacketType::AUDIO {
+                            match sub_tx.send(Some(Vec::from(&buffer[32..]))) {
+                                Err(_) => return,
+                                _ => {}
+                            }
+                        }
                     },
                     Err(_) => return,
                 }
