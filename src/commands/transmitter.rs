@@ -3,10 +3,7 @@ use serenity::prelude::Mutex as SerenityMutex;
 use songbird::{input::Input, tracks::create_player, Call};
 use std::env;
 use std::net::UdpSocket;
-use std::sync::{
-    mpsc::{sync_channel, SyncSender},
-    Arc, Mutex,
-};
+use std::sync::{mpsc::{sync_channel, SyncSender}, Arc, Mutex, MutexGuard};
 use std::thread;
 
 use songbird::input::{Codec, Container, Reader};
@@ -20,7 +17,7 @@ pub enum USRPVoicePacketType {
 }
 
 pub struct Transmitter {
-    discord_channel: Mutex<Option<Arc<SerenityMutex<Call>>>>,
+    discord_channel: Arc<Mutex::<Option<Arc<SerenityMutex<Call>>>>>,
     tx: SyncSender<Option<Vec<u8>>>,
 }
 
@@ -40,10 +37,11 @@ impl Transmitter {
         let socket = UdpSocket::bind(dmr_target_tx_addr)
             .expect("Couldn't bind udp socket for discord's audio transmitter");
 
-        let discord_channel = Mutex::<Option<Arc<SerenityMutex<Call>>>>::new(None);
+        let discord_channel = Arc::new(Mutex::new(None));
 
         let (tx, rx) = sync_channel::<Option<Vec<u8>>>(128);
 
+        let channel_ref = discord_channel.clone();
         thread::spawn(move || loop {
             match rx.recv() {
                 Ok(packet) => match packet {
@@ -56,7 +54,7 @@ impl Transmitter {
                             None,
                         ));
                         {
-                            let channel = discord_channel.lock().unwrap();
+                            let channel: MutexGuard<Option<Arc<SerenityMutex<Call>>>> = channel_ref.lock().unwrap();
                             match &*channel {
                                 Some(device) => {
                                     let rt = Runtime::new().unwrap();
@@ -111,7 +109,7 @@ impl Transmitter {
         });
 
         Self {
-            discord_channel: Mutex::new(None),
+            discord_channel.clone(),
             tx,
         }
     }
