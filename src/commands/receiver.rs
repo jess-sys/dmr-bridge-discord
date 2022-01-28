@@ -57,10 +57,13 @@ impl Receiver {
     pub fn new() -> Self {
         // You can manage state here, such as a buffer of audio packet bytes so
         // you can later store them in intervals.
+        let dmr_target_rx_addr = env::var("DMR_TARGET_RX_ADDR")
+            .expect("Expected a target rx address in the environment");
+
         let socket = UdpSocket::bind("127.0.0.1:0")
             .expect("Couldn't bind udp socket for discord's audio receiver");
-        socket.connect(env::var("DMR_TARGET_RX_ADDR")
-                .expect("Expected a target rx address in the environment"))
+
+        socket.connect(dmr_target_rx_addr)
             .expect("Couldn't connect to DMR's audio transmitter");
 
         let (tx, rx) = sync_channel::<Option<(USRPVoicePacketType, Vec<u8>)>>(128);

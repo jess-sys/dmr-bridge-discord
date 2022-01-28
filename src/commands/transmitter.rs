@@ -27,11 +27,8 @@ impl Transmitter {
         let dmr_target_tx_addr = env::var("DMR_TARGET_TX_ADDR")
             .expect("Expected a target tx address in the environment");
 
-        let socket = UdpSocket::bind("127.0.0.1:0")
+        let socket = UdpSocket::bind(dmr_target_tx_addr)
             .expect("Couldn't bind udp socket for discord's audio transmitter");
-
-        socket.connect(dmr_target_tx_addr)
-            .expect("Couldn't connect to DMR's audio receiver");
 
         let discord_channel = Mutex::<Option<Arc<SerenityMutex<Call>>>>::new(None);
 
