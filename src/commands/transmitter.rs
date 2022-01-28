@@ -77,7 +77,7 @@ impl Transmitter {
                                     let rt = Runtime::new().unwrap();
                                     let mut call = rt.block_on(async { device.lock().await });
                                     call.play_source(audio);
-                                    let two_millis = time::Duration::from_millis(2);
+                                    let two_millis = time::Duration::from_millis(4);
                                     thread::sleep(two_millis);
                                 }
                                 None => {}
