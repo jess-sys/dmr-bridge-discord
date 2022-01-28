@@ -1,5 +1,5 @@
 [package]
-name = "dmr-bridge-discord-rust"
+name = "dmr-bridge-discord"
 version = "0.1.0"
 authors = ["Alexandre Monier <alexandre.monierc@gmail.com>"]
 edition = "2018"
