@@ -10,7 +10,7 @@ This script is inspired by <https://github.com/jess-sys/DMRBridgeWAV/blob/master
 
 The target server is AnalogBridge (see <https://github.com/DVSwitch/Analog_Bridge>).
 
-![Diagram](https://user-images.githubusercontent.com/20131496/151708716-22ff9881-efdc-49f8-9df0-e519cdddbc46.png)
+![Diagram](https://user-images.githubusercontent.com/20131496/151708871-3f1e4635-ecde-49df-8de3-484d58337695.png)
 
 ### Build
 
