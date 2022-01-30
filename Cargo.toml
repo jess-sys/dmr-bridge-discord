@@ -1,6 +1,6 @@
 [package]
 name = "dmr-bridge-discord"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Alexandre MONIER <alexandre.monierc@gmail.com>", "Jessy SOBREIRO <jessy.sobreiro@gmail.com>"]
 keywords = ["dmr", "analog-bridge", "usrp", "discord"]
 edition = "2018"
@@ -10,7 +10,7 @@ description = "Bridge a DMR network with a Discord voice channel"
 repository = "https://github.com/jess-sys/dmr-bridge-discord.git"
 homepage = "https://github.com/jess-sys/dmr-bridge-discord"
 documentation = "https://github.com/jess-sys/dmr-bridge-discord/README.md"
-categories = ["discord-bot", "dmr-bridge"]
+categories = ["command-line-utilities", "multimedia::audio", "network-programming"]
 
 [dependencies]
 # cpal = { version = "*", features = ["jack"] } will be used in future versions
