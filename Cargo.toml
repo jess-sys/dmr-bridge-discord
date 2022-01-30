@@ -14,8 +14,8 @@ categories = ["discord-bot", "dmr-bridge"]
 
 [dependencies]
 # cpal = { version = "*", features = ["jack"] } will be used in future versions
-dasp_signal = { version = "*" }
-dasp_interpolate = { version = "*", features = ["linear"]}
+dasp_signal = { version = "0" }
+dasp_interpolate = { version = "0", features = ["linear"]}
 songbird = "0.2"
 serenity = { version = "0.10", features = [ "voice" ]}
 tokio = { version = "1", features = ["full"] }
