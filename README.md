@@ -39,8 +39,8 @@ Edit the `.env` (the same directory or in /opt/dmr-bridge-discord) file to refle
 
 * `BOT_TOKEN` : see [this link](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token) to know how to get a token
 * `BOT_PREFIX` : prefix to add before the bot's commands 
-* `DMR_TARGET_RX_ADDR` : your Analog Bridge IP and port
-* `DMR_TARGET_TX_ADDR` : your dmr-bridge-discord IP and port (is localhost)
+* `TARGET_RX_ADDR` : your Analog Bridge IP and port
+* `LOCAL_RX_ADDR` : your dmr-bridge-discord IP and port (is localhost)
 
 ### Run
 
