@@ -8,23 +8,20 @@ use std::{env, sync::Arc};
 mod commands;
 mod handler;
 
-use commands::transmitter::Transmitter;
+use commands::receiver::Receiver;
 use handler::Handler;
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
 
+    env::var("TARGET_RX_ADDR").expect("Expected a target rx address in the environment");
+    env::var("LOCAL_TX_ADDR").expect("Expected a local rx address in the environment");
+
     let token = env::var("BOT_TOKEN").expect("Expected a token in the environment");
 
     let framework = StandardFramework::new()
-        .configure(|c| {
-            c.prefix(
-                env::var("BOT_PREFIX")
-                    .expect("Expected a prefix in the environment")
-                    .as_str(),
-            )
-        })
+        .configure(|c| c.prefix(env::var("BOT_PREFIX").unwrap_or(String::from("!")).as_str()))
         .group(&commands::GENERAL_GROUP);
 
     let songbird_config = Config::default().decode_mode(DecodeMode::Decode);
@@ -38,7 +35,7 @@ async fn main() {
 
     {
         let mut data = client.data.write().await;
-        data.insert::<commands::DMRContext>(Arc::new(Mutex::new(Transmitter::new())));
+        data.insert::<commands::DMRContext>(Arc::new(Mutex::new(Receiver::new())));
     }
 
     let _ = client

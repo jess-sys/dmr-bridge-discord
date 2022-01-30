@@ -46,7 +46,7 @@ Edit the `.env` (the same directory or in /opt/dmr-bridge-discord) file to refle
 
 #### Systemctl service
 
-```
+```bash
 systemctl start dmr-bridge-discord.service
 # or enable it at boot:
 # systemctl enable dmr-bridge-discord.service --now
@@ -74,6 +74,7 @@ docker-compose up
 ### Usage
 
 Here are the bot's commands:
+
 * `!join` : Make the bot join the channel (you need to be in a voice channel first)
 * `!leave` : Make the bot left the channel
 

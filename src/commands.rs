@@ -13,18 +13,17 @@ use songbird::CoreEvent;
 
 use std::sync::Arc;
 
-mod receiver;
-pub mod transmitter;
+mod transmitter;
+pub mod receiver;
 
-use crate::commands::receiver::ReceiverWrapper;
+use transmitter::{Transmitter, TransmitterWrapper};
 use chrono::prelude::Utc;
 use receiver::Receiver;
-use transmitter::Transmitter;
 
 pub struct DMRContext;
 
 impl TypeMapKey for DMRContext {
-    type Value = Arc<Mutex<Transmitter>>;
+    type Value = Arc<Mutex<Receiver>>;
 }
 
 #[group]
@@ -62,14 +61,14 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
         // NOTE: this skips listening for the actual connection result.
         let mut handler = handler_lock.lock().await;
 
-        let receiver = Arc::new(Receiver::new());
-        let speaking_update_receiver = ReceiverWrapper::new(receiver.clone());
-        let voice_packet_receiver = ReceiverWrapper::new(receiver.clone());
+        let transmitter = Arc::new(Transmitter::new());
+        let speaking_update_transmitter = TransmitterWrapper::new(transmitter.clone());
+        let voice_packet_transmitter = TransmitterWrapper::new(transmitter.clone());
 
-        handler.add_global_event(CoreEvent::SpeakingUpdate.into(), speaking_update_receiver);
-        handler.add_global_event(CoreEvent::VoicePacket.into(), voice_packet_receiver);
+        handler.add_global_event(CoreEvent::SpeakingUpdate.into(), speaking_update_transmitter);
+        handler.add_global_event(CoreEvent::VoicePacket.into(), voice_packet_transmitter);
 
-        let transmitter_lock = {
+        let receiver_lock = {
             let data_read = ctx.data.read().await;
             data_read
                 .get::<DMRContext>()
@@ -78,8 +77,8 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
         };
 
         {
-            let mut transmitter = transmitter_lock.lock().await;
-            transmitter.set(handler_lock.clone());
+            let mut receiver = receiver_lock.lock().await;
+            receiver.set(handler_lock.clone());
         }
 
         check_msg(
@@ -112,7 +111,7 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
     let has_handler = manager.get(guild_id).is_some();
 
     if has_handler {
-        let transmitter_lock = {
+        let receiver_lock = {
             let data_read = ctx.data.read().await;
             data_read
                 .get::<DMRContext>()
@@ -121,8 +120,8 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
         };
 
         {
-            let mut transmitter = transmitter_lock.lock().await;
-            transmitter.unset();
+            let mut receiver = receiver_lock.lock().await;
+            receiver.unset();
         }
 
         if let Err(e) = manager.remove(guild_id).await {
