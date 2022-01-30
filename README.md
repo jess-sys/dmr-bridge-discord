@@ -19,39 +19,47 @@ Make sure you have [Rust installed](https://rustup.rs/)
 ```bash
 cargo build --release
 # or run it directly :
-cargo run
+# cargo run
 ```
 
 ### Install
 
+Install binaries to `/opt/dmr-bridge-discord/bin`, default config to `/opt/dmr-bridge-discord/.env` and install systemd service to `/lib/systemd/system/dmr-bridge-discord`.
+
 ```bash
 # Coming soon
+make install
+make install-config
 make install-systemd
 ```
 
-### Run
+### Configure
 
-#### Portable install
-
-Do the following after you've built or [downloaded the pre-compiled version](https://github.com/jess-sys/dmr-bridge-discord/releases).
-
-Edit the `.env` file to reflect your infrastructure :
+Edit the `.env` (the same directory or in /opt/dmr-bridge-discord) file to reflect your infrastructure :
 
 * `BOT_TOKEN` : see [this link](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token) to know how to get a token
 * `BOT_PREFIX` : prefix to add before the bot's commands 
 * `DMR_TARGET_RX_ADDR` : your Analog Bridge IP and port
 * `DMR_TARGET_TX_ADDR` : your dmr-bridge-discord IP and port (is localhost)
 
+### Run
+
+#### Systemctl service
+
+```
+systemctl start dmr-bridge-discord.service
+# or enable it at boot:
+# systemctl enable dmr-bridge-discord.service --now
+```
+
+#### Portable install
+
+Do the following after you've built or [downloaded the pre-compiled version](https://github.com/jess-sys/dmr-bridge-discord/releases).
+
 Then execute the binary in the same folder or export the environment variables present in the .env file.
 
 ```bash
 ./dmr-bridge-discord-linux
-```
-
-Here is the bot's commands:
-```
-"join" : Make the bot join the channel (need to be in a voice channel)
-"leave" : Make the bot left the channel
 ```
 
 #### Inside a container
@@ -62,6 +70,16 @@ You can use the docker-compose configuration file:
 # coming soon - not available atm
 docker-compose up
 ```
+
+### Usage
+
+Here are the bot's commands:
+* `!join` : Make the bot join the channel (you need to be in a voice channel first)
+* `!leave` : Make the bot left the channel
+
+The bot will join the voice channel you're in after your type `!join`.
+
+Make sure you don't TX and RX at the same time, as AnalogBridge and the rest of the stack is half-duplex.
 
 ## Todo
 
