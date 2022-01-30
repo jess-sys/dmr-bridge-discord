@@ -1,13 +1,19 @@
 [package]
 name = "dmr-bridge-discord"
 version = "0.1.0"
-authors = ["Alexandre Monier <alexandre.monierc@gmail.com>"]
+authors = ["Alexandre MONIER <alexandre.monierc@gmail.com>", "Jessy SOBREIRO <jessy.sobreiro@gmail.com>"]
+keywords = ["dmr", "analog-bridge", "usrp", "discord"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "GPL-3.0-only"
+readme = "README.md"
+description = "Bridge a DMR network with a Discord voice channel"
+repository = "https://github.com/jess-sys/dmr-bridge-discord.git"
+homepage = "https://github.com/jess-sys/dmr-bridge-discord"
+documentation = "https://github.com/jess-sys/dmr-bridge-discord/README.md"
+categories = ["discord-bot", "dmr-bridge"]
 
 [dependencies]
-# cpal = { version = "*", features = ["jack"] }
+# cpal = { version = "*", features = ["jack"] } will be used in future versions
 dasp_signal = { version = "*" }
 dasp_interpolate = { version = "*", features = ["linear"]}
 songbird = "0.2"
