@@ -14,7 +14,7 @@ The target server is AnalogBridge (see <https://github.com/DVSwitch/Analog_Bridg
 
 ### Build
 
-Make sure you have [Rust installed](https://rustup.rs/)
+Make sure you have [Rust installed](https://rustup.rs/) and also [Opus codec library development files installed](https://packages.ubuntu.com/jammy/libopus-dev)
 
 ```bash
 cargo build --release
