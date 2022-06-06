@@ -16,7 +16,7 @@ async fn main() {
     dotenv().ok();
 
     env::var("TARGET_RX_ADDR").expect("Expected a target rx address in the environment");
-    env::var("LOCAL_TX_ADDR").expect("Expected a local rx address in the environment");
+    env::var("LOCAL_RX_ADDR").expect("Expected a local rx address in the environment");
 
     let token = env::var("BOT_TOKEN").expect("Expected a token in the environment");
 
