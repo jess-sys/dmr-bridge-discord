@@ -35,7 +35,7 @@ impl Receiver {
     pub fn new() -> Self {
         // You can manage state here, such as a buffer of audio packet bytes so
         // you can later store them in intervals.
-        let dmr_local_rx_addr = env::var("LOCAL_TX_ADDR")
+        let dmr_local_rx_addr = env::var("LOCAL_RX_ADDR")
             .expect("Expected a local rx address in the environment");
 
         let socket = UdpSocket::bind(dmr_local_rx_addr)
