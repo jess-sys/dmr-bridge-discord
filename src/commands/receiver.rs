@@ -12,13 +12,7 @@ use std::sync::{
 use std::thread;
 use std::{env, time};
 use tokio::runtime::Runtime;
-
-#[derive(PartialEq, Debug)]
-pub enum USRPVoicePacketType {
-    START,
-    AUDIO,
-    END,
-}
+use dmr_bridge_discord::USRPVoicePacketType;
 
 pub struct Receiver {
     discord_channel: Arc<Mutex<Option<Arc<SerenityMutex<Call>>>>>,
@@ -97,17 +91,17 @@ impl Receiver {
             match socket.recv(&mut buffer) {
                 Ok(packet_size) => {
                     if packet_size >= 32 {
-                        let packet_type_as_num = LittleEndian::read_u32(&mut buffer[20..24]);
+                        let packet_type_as_num = LittleEndian::read_u32(&buffer[20..24]);
                         let packet_type = match packet_type_as_num {
                             0 => {
                                 if packet_size == 32 {
-                                    USRPVoicePacketType::END
+                                    USRPVoicePacketType::End
                                 } else {
-                                    USRPVoicePacketType::AUDIO
+                                    USRPVoicePacketType::Audio
                                 }
                             }
-                            2 => USRPVoicePacketType::START,
-                            _ => USRPVoicePacketType::AUDIO,
+                            2 => USRPVoicePacketType::Start,
+                            _ => USRPVoicePacketType::Audio,
                         };
                         println!(
                             "[INFO] RECEIVED PACKET: {:?} (length: {}, ptt: {})",
@@ -115,14 +109,9 @@ impl Receiver {
                             packet_size,
                             BigEndian::read_u32(&buffer[12..16])
                         );
-                        if packet_type == USRPVoicePacketType::AUDIO {
+                        if packet_type == USRPVoicePacketType::Audio {
                             let audio = Vec::from(&buffer[32..]);
-                            if audio.len() == 320 {
-                                match sub_tx.send(Some(audio)) {
-                                    Err(_) => return,
-                                    _ => {}
-                                }
-                            }
+                            if audio.len() == 320 && sub_tx.send(Some(audio)).is_err() { return }
                         }
                     }
                 }

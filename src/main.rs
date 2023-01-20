@@ -4,6 +4,7 @@ use songbird::{driver::DecodeMode, Config, SerenityInit};
 
 use dotenv::dotenv;
 use std::{env, sync::Arc};
+use serenity::prelude::*;
 
 mod commands;
 mod handler;
@@ -21,12 +22,14 @@ async fn main() {
     let token = env::var("BOT_TOKEN").expect("Expected a token in the environment");
 
     let framework = StandardFramework::new()
-        .configure(|c| c.prefix(env::var("BOT_PREFIX").unwrap_or(String::from("!")).as_str()))
+        .configure(|c| c.prefix(env::var("BOT_PREFIX").unwrap_or_else(|_| String::from("!")).as_str()))
         .group(&commands::GENERAL_GROUP);
+
+    let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_VOICE_STATES;
 
     let songbird_config = Config::default().decode_mode(DecodeMode::Decode);
 
-    let mut client = Client::builder(&token)
+    let mut client = Client::builder(&token, intents)
         .event_handler(Handler)
         .framework(framework)
         .register_songbird_from_config(songbird_config)

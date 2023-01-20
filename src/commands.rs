@@ -4,8 +4,8 @@ use serenity::{
         macros::{command, group},
         CommandResult,
     },
-    model::{channel::Message, misc::Mentionable},
-    prelude::{Mutex, TypeMapKey},
+    model::channel::Message,
+    prelude::{Mutex, TypeMapKey, Mentionable},
     Result as SerenityResult,
 };
 
@@ -33,7 +33,7 @@ pub struct General;
 #[command]
 #[only_in(guilds)]
 async fn join(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).await.unwrap();
+    let guild = msg.guild(&ctx.cache).unwrap();
     let guild_id = guild.id;
 
     let channel_id = guild
@@ -57,7 +57,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
 
     let (handler_lock, conn_result) = manager.join(guild_id, channel).await;
 
-    if let Ok(_) = conn_result {
+    if conn_result.is_ok() {
         // NOTE: this skips listening for the actual connection result.
         let mut handler = handler_lock.lock().await;
 
@@ -95,7 +95,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[only_in(guilds)]
 async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).await.unwrap();
+    let guild = msg.guild(&ctx.cache).unwrap();
     let guild_id = guild.id;
 
     let channel_id = guild
@@ -141,7 +141,7 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
     let now = Utc::now();
-    let elapsed = now - msg.timestamp;
+    let elapsed = now - *msg.timestamp;
     check_msg(
         msg.reply(ctx, format!("Pong! ({} ms)", elapsed.num_milliseconds()))
             .await,

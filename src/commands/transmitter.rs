@@ -12,13 +12,7 @@ use std::{env, thread, time};
 use std::sync::mpsc::{sync_channel, SyncSender};
 
 use songbird::{Event, EventContext, EventHandler as VoiceEventHandler};
-
-#[derive(PartialEq, Debug)]
-pub enum USRPVoicePacketType {
-    START,
-    AUDIO,
-    END,
-}
+use dmr_bridge_discord::USRPVoicePacketType;
 
 pub struct Transmitter {
     sequence: AtomicU32,
@@ -70,10 +64,10 @@ impl Transmitter {
                 match rx.recv() {
                     Ok(packet) => match packet {
                         Some((packet_type, packet_data)) => {
-                            if packet_type == USRPVoicePacketType::START {
+                            if packet_type == USRPVoicePacketType::Start {
                                 can_transmit = true;
                             }
-                            if can_transmit == true {
+                            if can_transmit {
                                 let two_millis = time::Duration::from_millis(2);
                                 thread::sleep(two_millis);
                                 println!(
@@ -82,12 +76,12 @@ impl Transmitter {
                                     packet_data.len(),
                                     BigEndian::read_u32(&packet_data[12..16])
                                 );
-                                match socket.send(&*packet_data) {
+                                match socket.send(&packet_data) {
                                     Ok(_) => {}
                                     Err(_) => return,
                                 }
                             }
-                            if packet_type == USRPVoicePacketType::END {
+                            if packet_type == USRPVoicePacketType::End {
                                 can_transmit = false;
                             }
                         }
@@ -135,13 +129,13 @@ impl VoiceEventHandler for Transmitter {
                     self.write_header(&mut start_buffer, false, 2);
                     start_buffer[32..53].copy_from_slice(&header);
                     self.tx
-                        .send(Some((USRPVoicePacketType::START, Vec::from(start_buffer))))
+                        .send(Some((USRPVoicePacketType::Start, Vec::from(start_buffer))))
                         .expect("Couldn't send discord's audio packet through DMR transmitter");
                 } else {
                     let mut end_buffer = [0u8; 32];
                     self.write_header(&mut end_buffer, false, 0);
                     self.tx
-                        .send(Some((USRPVoicePacketType::END, Vec::from(end_buffer))))
+                        .send(Some((USRPVoicePacketType::End, Vec::from(end_buffer))))
                         .expect("Couldn't send discord's audio packet through DMR transmitter");
                 }
             }
@@ -162,7 +156,7 @@ impl VoiceEventHandler for Transmitter {
                         self.write_header(&mut packet_buffer, true, 0);
                         LittleEndian::write_i16_into(&frames, &mut packet_buffer[32..]);
                         self.tx
-                            .send(Some((USRPVoicePacketType::AUDIO, Vec::from(packet_buffer))))
+                            .send(Some((USRPVoicePacketType::Audio, Vec::from(packet_buffer))))
                             .expect("Couldn't send discord's audio packet through DMR transmitter");
                     }
                 } else {
