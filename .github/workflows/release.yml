@@ -20,43 +20,21 @@ jobs:
             asset_name: dmr-bridge-discord-linux
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
 
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: stable
         
-    - uses: Swatinem/rust-cache@v1
+    - uses: Swatinem/rust-cache@v2
 
     - name: Build
       run: cargo build --release
       
-      
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: dmr-bridge-discord ${{ github.ref }}
-        draft: false
-        prerelease: false
-        
-    - name: Upload Release Asset
-      id: upload-release-asset 
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ matrix.artifact_name }}
-        asset_name: ${{ matrix.asset_name }}
-        asset_content_type: application/octet-stream
-
-    - name: Upload binaries to release
-      uses: actions/upload-artifact@v2
+    - name: Release
+      uses: softprops/action-gh-release@v1
       with:
         name: ${{ matrix.asset_name }}
-        path: ${{ matrix.artifact_name }}
+        files: ${{ matrix.artifact_name }}
+
