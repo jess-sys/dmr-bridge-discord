@@ -58,7 +58,7 @@ impl Default for USRP {
 
 impl USRP {
     pub fn from_buffer(buffer: [u8; 352]) -> Option<Self> {
-        if &buffer[0..4] == b"USRP" {
+        if &buffer[0..4] != b"USRP" {
             println!("Invalid packet: {:?}", buffer);
             None
         } else {
