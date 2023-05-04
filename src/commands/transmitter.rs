@@ -3,11 +3,10 @@ use rodio::dynamic_mixer::{mixer, DynamicMixerController};
 use serenity::async_trait;
 use std::net::UdpSocket;
 use std::sync::Arc;
-use std::{env, thread, time};
 use std::time::Duration;
+use std::{env, thread, time};
 
 use rodio::buffer::SamplesBuffer;
-use rodio::source::UniformSourceIterator;
 
 use songbird::{Event, EventContext, EventHandler as VoiceEventHandler};
 
@@ -46,16 +45,15 @@ impl Transmitter {
             .connect(dmr_target_rx_addr)
             .expect("Couldn't connect to DMR audio receiver");
 
-        let (mixer_controller, mixer) = mixer(2, 48000);
+        let (mixer_controller, mixer) = mixer(1, 8000);
 
         thread::spawn(move || {
             let mut sequence = 0;
             let mut mixer = mixer.peekable();
             let mut last_time_streaming_audio = time::Instant::now();
             let mut talked_since_last_time_streaming_audio = false;
-            let mut discord_voice_buffer = [0i16; 1920];
-            let mut discord_voice_buffer_index = 0;
             let mut usrp_voice_buffer = [0i16; 160];
+            let mut usrp_voice_buffer_index = 0;
 
             loop {
                 if talked_since_last_time_streaming_audio
@@ -88,25 +86,18 @@ impl Transmitter {
                     thread::sleep(TWO_MILLIS);
                     continue;
                 }
-                while discord_voice_buffer_index < discord_voice_buffer.len() {
+                while usrp_voice_buffer_index < usrp_voice_buffer.len() {
                     let sample = mixer.next();
                     if let Some(sample) = sample {
-                        discord_voice_buffer[discord_voice_buffer_index] = sample;
+                        usrp_voice_buffer[usrp_voice_buffer_index] = sample;
                     } else {
                         break;
                     }
-                    discord_voice_buffer_index += 1;
+                    usrp_voice_buffer_index += 1;
                 }
-                if discord_voice_buffer_index == discord_voice_buffer.len() {
+                if usrp_voice_buffer_index == usrp_voice_buffer.len() {
                     println!("Received Discord voice audio packet");
-                    discord_voice_buffer_index = 0;
-                    let source = SamplesBuffer::new(2, 48000, discord_voice_buffer.to_vec());
-                    let mut source = UniformSourceIterator::new(source, 1, 8000);
-                    for sample in usrp_voice_buffer.iter_mut() {
-                        *sample = source
-                            .next()
-                            .expect("Unreachable: buffer does not have enough samples");
-                    }
+                    usrp_voice_buffer_index = 0;
                     let usrp_packet = USRP {
                         sequence_counter: sequence,
                         stream_id: 0,
