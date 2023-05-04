@@ -98,6 +98,7 @@ impl Transmitter {
                     discord_voice_buffer_index += 1;
                 }
                 if discord_voice_buffer_index == discord_voice_buffer.len() {
+                    println!("Received Discord voice audio packet");
                     discord_voice_buffer_index = 0;
                     let source = SamplesBuffer::new(2, 48000, discord_voice_buffer.to_vec());
                     let mut source = UniformSourceIterator::new(source, 1, 8000);
@@ -123,9 +124,13 @@ impl Transmitter {
                     println!("Sent USRP voice audio packet");
                     last_time_streaming_audio = time::Instant::now();
                     talked_since_last_time_streaming_audio = true;
+                } else {
+                    println!("Received incomplete Discord voice audio packet");
                 }
             }
         });
+
+        println!("Transmitter started");
 
         Self { mixer_controller }
     }
