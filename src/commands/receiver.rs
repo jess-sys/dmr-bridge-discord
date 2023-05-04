@@ -40,37 +40,38 @@ impl Receiver {
                 match socket.recv(&mut buffer) {
                     Ok(packet_size) => {
                         if packet_size >= 32 {
-                            let usrp_packet = USRP::from_buffer(buffer);
-                            println!("Received USRP voice audio packet");
-                            let source = SamplesBuffer::new(1, 8000, usrp_packet.audio);
-                            let mut source = UniformSourceIterator::new(source, 2, 48000);
-                            for sample in discord_voice_buffer.iter_mut() {
-                                *sample = source
-                                    .next()
-                                    .expect("Unreachable: buffer does not have enough samples");
-                            }
-                            LittleEndian::write_i16_into(
-                                &discord_voice_buffer,
-                                &mut discord_voice_buffer_as_bytes,
-                            );
-                            let audio = Input::new(
-                                false,
-                                Reader::from_memory(Vec::from(discord_voice_buffer_as_bytes)),
-                                Codec::Pcm,
-                                Container::Raw,
-                                None,
-                            );
-                            {
-                                let channel: MutexGuard<Option<Arc<SerenityMutex<Call>>>> =
-                                    channel.lock().unwrap();
-                                if let Some(device) = channel.deref() {
-                                    let rt = Runtime::new().unwrap();
-                                    let mut call =
-                                        rt.block_on(async { device.lock().await });
-                                    println!("Sent Discord voice audio packet");
-                                    call.play_source(audio);
-                                    const TWO_MILLIS: Duration = Duration::from_millis(2);
-                                    thread::sleep(TWO_MILLIS);
+                            if let Some(usrp_packet) = USRP::from_buffer(buffer) {
+                                println!("Received USRP voice audio packet");
+                                let source = SamplesBuffer::new(1, 8000, usrp_packet.audio);
+                                let mut source = UniformSourceIterator::new(source, 2, 48000);
+                                for sample in discord_voice_buffer.iter_mut() {
+                                    *sample = source
+                                        .next()
+                                        .expect("Unreachable: buffer does not have enough samples");
+                                }
+                                LittleEndian::write_i16_into(
+                                    &discord_voice_buffer,
+                                    &mut discord_voice_buffer_as_bytes,
+                                );
+                                let audio = Input::new(
+                                    false,
+                                    Reader::from_memory(Vec::from(discord_voice_buffer_as_bytes)),
+                                    Codec::Pcm,
+                                    Container::Raw,
+                                    None,
+                                );
+                                {
+                                    let channel: MutexGuard<Option<Arc<SerenityMutex<Call>>>> =
+                                        channel.lock().unwrap();
+                                    if let Some(device) = channel.deref() {
+                                        let rt = Runtime::new().unwrap();
+                                        let mut call =
+                                            rt.block_on(async { device.lock().await });
+                                        println!("Sent Discord voice audio packet");
+                                        call.play_source(audio);
+                                        const TWO_MILLIS: Duration = Duration::from_millis(2);
+                                        thread::sleep(TWO_MILLIS);
+                                    }
                                 }
                             }
                         }

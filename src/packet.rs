@@ -57,13 +57,14 @@ impl Default for USRP {
 }
 
 impl USRP {
-    pub fn from_buffer(buffer: [u8; 352]) -> Self {
+    pub fn from_buffer(buffer: [u8; 352]) -> Option<Self> {
         if &buffer[0..4] == b"USRP" {
-            panic!("Invalid USRP packet")
+            println!("Invalid packet: {:?}", buffer);
+            None
         } else {
             let mut audio = [0i16; 160];
             NetworkEndian::read_i16_into(&buffer[32..352], &mut audio);
-            Self {
+            Some(Self {
                 sequence_counter: NetworkEndian::read_u32(&buffer[4..8]),
                 stream_id: NetworkEndian::read_u32(&buffer[8..12]),
                 push_to_talk: NetworkEndian::read_u32(&buffer[12..16]) != 0,
@@ -72,7 +73,7 @@ impl USRP {
                 multiplex_id: NetworkEndian::read_u32(&buffer[24..28]),
                 reserved: NetworkEndian::read_u32(&buffer[28..32]),
                 audio,
-            }
+            })
         }
     }
 
