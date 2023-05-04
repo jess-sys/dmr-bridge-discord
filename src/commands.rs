@@ -5,7 +5,7 @@ use serenity::{
         CommandResult,
     },
     model::channel::Message,
-    prelude::{Mutex, TypeMapKey, Mentionable},
+    prelude::{Mentionable, Mutex, TypeMapKey},
     Result as SerenityResult,
 };
 
@@ -13,16 +13,18 @@ use songbird::CoreEvent;
 
 use std::sync::Arc;
 
-mod transmitter;
 pub mod receiver;
+pub mod transmitter;
 
-use transmitter::{Transmitter, TransmitterWrapper};
 use chrono::prelude::Utc;
+use transmitter::Transmitter;
+
+use crate::commands::transmitter::TransmitterWrapper;
 use receiver::Receiver;
 
-pub struct DMRContext;
+pub struct DMRReceiver;
 
-impl TypeMapKey for DMRContext {
+impl TypeMapKey for DMRReceiver {
     type Value = Arc<Mutex<Receiver>>;
 }
 
@@ -62,17 +64,14 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
         let mut handler = handler_lock.lock().await;
 
         let transmitter = Arc::new(Transmitter::new());
-        let speaking_update_transmitter = TransmitterWrapper::new(transmitter.clone());
         let voice_packet_transmitter = TransmitterWrapper::new(transmitter.clone());
-
-        handler.add_global_event(CoreEvent::SpeakingUpdate.into(), speaking_update_transmitter);
         handler.add_global_event(CoreEvent::VoicePacket.into(), voice_packet_transmitter);
 
         let receiver_lock = {
             let data_read = ctx.data.read().await;
             data_read
-                .get::<DMRContext>()
-                .expect("Expected DMRContext in TypeMap.")
+                .get::<DMRReceiver>()
+                .expect("Expected DMRReceiver in TypeMap.")
                 .clone()
         };
 
@@ -114,8 +113,8 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
         let receiver_lock = {
             let data_read = ctx.data.read().await;
             data_read
-                .get::<DMRContext>()
-                .expect("Expected DMRContext in TypeMap.")
+                .get::<DMRReceiver>()
+                .expect("Expected DMRReceiver in TypeMap.")
                 .clone()
         };
 

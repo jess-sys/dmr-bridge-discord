@@ -13,9 +13,7 @@ documentation = "https://github.com/jess-sys/dmr-bridge-discord/README.md"
 categories = ["command-line-utilities", "multimedia::audio", "network-programming"]
 
 [dependencies]
-# cpal = { version = "*", features = ["jack"] } will be used in future versions
-dasp_signal = { version = "0.11.0" }
-dasp_interpolate = { version = "0.11.0", features = ["linear"]}
+rodio = "0.17.1"
 songbird = "0.3.2"
 serenity = { version = "0.11.5", features = [ "voice" ]}
 tokio = { version = "1.28.0", features = ["full"] }

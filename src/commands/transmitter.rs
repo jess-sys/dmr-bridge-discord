@@ -1,28 +1,18 @@
+use dmr_bridge_discord::packet::{PacketType, USRP};
+use rodio::dynamic_mixer::{mixer, DynamicMixerController};
 use serenity::async_trait;
-
-use byteorder::{BigEndian, ByteOrder, LittleEndian};
-
-use dasp_interpolate::linear::Linear;
-use dasp_signal::{self as signal, Signal};
 use std::net::UdpSocket;
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::{env, thread, time};
+use std::time::Duration;
 
-use std::sync::mpsc::{sync_channel, SyncSender};
+use rodio::buffer::SamplesBuffer;
+use rodio::source::UniformSourceIterator;
 
 use songbird::{Event, EventContext, EventHandler as VoiceEventHandler};
-use dmr_bridge_discord::USRPVoicePacketType;
 
 pub struct Transmitter {
-    sequence: AtomicU32,
-    tx: SyncSender<Option<(USRPVoicePacketType, Vec<u8>)>>,
-}
-
-impl Drop for Transmitter {
-    fn drop(&mut self) {
-        self.tx.send(None).unwrap();
-    }
+    mixer_controller: Arc<DynamicMixerController<i16>>,
 }
 
 pub struct TransmitterWrapper {
@@ -46,71 +36,98 @@ impl Transmitter {
     pub fn new() -> Self {
         // You can manage state here, such as a buffer of audio packet bytes so
         // you can later store them in intervals.
-        let dmr_target_rx_addr = env::var("TARGET_RX_ADDR")
-            .expect("Expected a target rx address in the environment");
+        let dmr_target_rx_addr =
+            env::var("TARGET_RX_ADDR").expect("Expected a target rx address in the environment");
 
-        let socket = UdpSocket::bind("0.0.0.0:0")
-            .expect("Couldn't bind udp socket for transmission");
+        let socket =
+            UdpSocket::bind("0.0.0.0:0").expect("Couldn't bind udp socket for transmission");
 
         socket
             .connect(dmr_target_rx_addr)
-            .expect("Couldn't connect to DMR's audio receiver");
+            .expect("Couldn't connect to DMR audio receiver");
 
-        let (tx, rx) = sync_channel::<Option<(USRPVoicePacketType, Vec<u8>)>>(512);
+        let (mixer_controller, mixer) = mixer(2, 48000);
 
         thread::spawn(move || {
-            let mut can_transmit = false;
+            let mut sequence = 0;
+            let mut mixer = mixer.peekable();
+            let mut last_time_streaming_audio = time::Instant::now();
+            let mut talked_since_last_time_streaming_audio = false;
+            let mut discord_voice_buffer = [0i16; 1920];
+            let mut discord_voice_buffer_index = 0;
+            let mut usrp_voice_buffer = [0i16; 160];
+
             loop {
-                match rx.recv() {
-                    Ok(packet) => match packet {
-                        Some((packet_type, packet_data)) => {
-                            if packet_type == USRPVoicePacketType::Start {
-                                can_transmit = true;
-                            }
-                            if can_transmit {
-                                let two_millis = time::Duration::from_millis(2);
-                                thread::sleep(two_millis);
-                                println!(
-                                    "[INFO] SEND PACKET: {:?} (length: {}, ptt: {})",
-                                    packet_type,
-                                    packet_data.len(),
-                                    BigEndian::read_u32(&packet_data[12..16])
-                                );
-                                match socket.send(&packet_data) {
-                                    Ok(_) => {}
-                                    Err(_) => return,
-                                }
-                            }
-                            if packet_type == USRPVoicePacketType::End {
-                                can_transmit = false;
-                            }
-                        }
-                        None => return,
-                    },
-                    Err(_) => return,
+                if talked_since_last_time_streaming_audio
+                    && last_time_streaming_audio
+                        .duration_since(time::Instant::now())
+                        .as_millis()
+                        > 20
+                {
+                    talked_since_last_time_streaming_audio = false;
+                    const EMPTY_VOICE_BUFFER: [i16; 160] = [0i16; 160];
+                    let usrp_packet = USRP {
+                        sequence_counter: sequence,
+                        stream_id: 0,
+                        push_to_talk: false,
+                        talk_group: 0,
+                        packet_type: PacketType::Voice,
+                        multiplex_id: 0,
+                        reserved: 0,
+                        audio: EMPTY_VOICE_BUFFER,
+                    }
+                    .to_buffer();
+                    socket
+                        .send(&usrp_packet)
+                        .expect("Failed to send USRP voice end packet");
+                    println!("Sent USRP voice end packet");
+                    sequence += 1;
+                }
+                if mixer.peek().is_none() {
+                    const TWO_MILLIS: Duration = Duration::from_millis(2);
+                    thread::sleep(TWO_MILLIS);
+                    continue;
+                }
+                while discord_voice_buffer_index < discord_voice_buffer.len() {
+                    let sample = mixer.next();
+                    if let Some(sample) = sample {
+                        discord_voice_buffer[discord_voice_buffer_index] = sample;
+                    } else {
+                        break;
+                    }
+                    discord_voice_buffer_index += 1;
+                }
+                if discord_voice_buffer_index == discord_voice_buffer.len() {
+                    discord_voice_buffer_index = 0;
+                    let source = SamplesBuffer::new(2, 48000, discord_voice_buffer.to_vec());
+                    let mut source = UniformSourceIterator::new(source, 1, 8000);
+                    for sample in usrp_voice_buffer.iter_mut() {
+                        *sample = source
+                            .next()
+                            .expect("Unreachable: buffer does not have enough samples");
+                    }
+                    let usrp_packet = USRP {
+                        sequence_counter: sequence,
+                        stream_id: 0,
+                        push_to_talk: true,
+                        talk_group: 0,
+                        packet_type: PacketType::Voice,
+                        multiplex_id: 0,
+                        reserved: 0,
+                        audio: usrp_voice_buffer,
+                    };
+                    sequence += 1;
+                    socket
+                        .send(&usrp_packet.to_buffer())
+                        .expect("Failed to send USRP voice audio packet");
+                    println!("Sent USRP voice audio packet");
+                    last_time_streaming_audio = time::Instant::now();
+                    talked_since_last_time_streaming_audio = true;
                 }
             }
         });
 
-        Self {
-            sequence: AtomicU32::new(0),
-            tx,
-        }
-    }
-
-    pub fn write_header(&self, buffer: &mut [u8], transmit: bool, packet_type: u32) {
-        buffer[..4].copy_from_slice(b"USRP");
-        let sequence = self.sequence.load(Ordering::Relaxed);
-        BigEndian::write_u32(&mut buffer[4..8], sequence);
-        self.sequence.fetch_add(1, Ordering::SeqCst);
-        LittleEndian::write_u32(&mut buffer[20..24], packet_type);
-        if packet_type != 2 {
-            BigEndian::write_u32(&mut buffer[8..12], 2);
-            BigEndian::write_u32(&mut buffer[12..16], transmit as u32);
-            BigEndian::write_u32(&mut buffer[16..20], 7);
-            BigEndian::write_u32(&mut buffer[24..28], 0);
-            BigEndian::write_u32(&mut buffer[28..32], 0);
-        }
+        Self { mixer_controller }
     }
 }
 
@@ -119,45 +136,13 @@ impl VoiceEventHandler for Transmitter {
     async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
         use EventContext as Ctx;
         match ctx {
-            Ctx::SpeakingUpdate(data) => {
-                if data.speaking {
-                    let mut start_buffer = [0u8; 352];
-                    let header: [u8; 21] = [
-                        0x08, 0x14, 0x1F, 0xC2, 0x39, 0x0C, 0x67, 0xDE, 0x45, 0x00, 0x00, 0x07,
-                        0x02, 0x00, 0x32, 0x30, 0x38, 0x31, 0x33, 0x33, 0x37,
-                    ];
-                    self.write_header(&mut start_buffer, false, 2);
-                    start_buffer[32..53].copy_from_slice(&header);
-                    self.tx
-                        .send(Some((USRPVoicePacketType::Start, Vec::from(start_buffer))))
-                        .expect("Couldn't send discord's audio packet through DMR transmitter");
-                } else {
-                    let mut end_buffer = [0u8; 32];
-                    self.write_header(&mut end_buffer, false, 0);
-                    self.tx
-                        .send(Some((USRPVoicePacketType::End, Vec::from(end_buffer))))
-                        .expect("Couldn't send discord's audio packet through DMR transmitter");
-                }
-            }
             Ctx::VoicePacket(data) => {
                 // An event which fires for every received audio packet,
                 // containing the decoded data.
                 if let Some(audio) = data.audio {
-                    if audio.len() == 1920 {
-                        let mut source = signal::from_iter(audio.iter().cloned());
-                        let first = source.next();
-                        let second = source.next();
-                        let interpolator = Linear::new(first, second);
-                        let frames: Vec<_> = source
-                            .from_hz_to_hz(interpolator, 96000.0, 8000.0)
-                            .take(160)
-                            .collect();
-                        let mut packet_buffer = [0u8; 352];
-                        self.write_header(&mut packet_buffer, true, 0);
-                        LittleEndian::write_i16_into(&frames, &mut packet_buffer[32..]);
-                        self.tx
-                            .send(Some((USRPVoicePacketType::Audio, Vec::from(packet_buffer))))
-                            .expect("Couldn't send discord's audio packet through DMR transmitter");
+                    if !audio.is_empty() {
+                        self.mixer_controller
+                            .add(SamplesBuffer::new(2, 48000, audio.clone()));
                     }
                 } else {
                     println!("RTP packet, but no audio. Driver may not be configured to decode.");
