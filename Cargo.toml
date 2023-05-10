@@ -1,9 +1,9 @@
 [package]
 name = "dmr-bridge-discord"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["Alexandre MONIER <alexandre.monierc@gmail.com>", "Jessy SOBREIRO <jessy.sobreiro@gmail.com>"]
 keywords = ["dmr", "analog-bridge", "usrp", "discord"]
-edition = "2018"
+edition = "2021"
 license = "GPL-3.0-only"
 readme = "README.md"
 description = "Bridge a DMR network with a Discord voice channel"
